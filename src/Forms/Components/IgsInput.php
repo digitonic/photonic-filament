@@ -2,7 +2,9 @@
 
 namespace Digitonic\Filament\IgsField\Forms\Components;
 
+use Filament\Forms\Components\FileUpload;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class IgsInput extends FileUpload
@@ -29,12 +31,13 @@ class IgsInput extends FileUpload
                 throw new \RuntimeException('IGS endpoint is not configured. Set igs-field.endpoint in your config.');
             }
 
-            $stream = fopen($file->getRealPath(), 'r');
+            $stream = Storage::readStream($file->getRealPath());
+
 
             try {
                 $response = Http::asMultipart()
                     ->attach($fileField, $stream, $file->getClientOriginalName())
-                    ->post($endpoint);
+                    ->post($endpoint . '/upload/' . config('igs-field.site_uuid'));
             } finally {
                 if (is_resource($stream)) {
                     fclose($stream);

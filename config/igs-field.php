@@ -4,7 +4,9 @@ return [
     // Base URL of the third-party API that processes the uploaded image and
     // returns a filename to be stored in your application's database.
     // You can override this in your app's config or via IGS_FIELD_ENDPOINT env var.
-    'endpoint' => env('IGS_FIELD_ENDPOINT', 'https://igs.test'),
+    'endpoint' => env('IGS_FIELD_ENDPOINT', 'https://igs.test/api'),
+
+    'site_uuid' => env('IGS_FIELD_SITE_UUID'),
 
     // The multipart field name the API expects for the uploaded file.
     'file_field' => env('IGS_FIELD_FILE_FIELD', 'file'),

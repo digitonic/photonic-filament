@@ -2,20 +2,15 @@
 
 namespace Digitonic\Filament\IgsField;
 
-use Package;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class IgsFieldServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/igs-field.php', 'igs-field');
-    }
-
-    public function boot(): void
-    {
-        // Publish config
-        $this->publishes([
-            __DIR__ . '/../config/igs-field.php' => config_path('igs-field.php'),
-        ], 'igs-field-config');
+        $package
+            ->name('igs-field')
+            ->hasConfigFile();
     }
 }
