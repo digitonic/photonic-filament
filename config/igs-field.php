@@ -15,4 +15,10 @@ return [
     // attempt to parse the entire response body as the filename. If set, we'll try this
     // key first and then fall back to common alternatives.
     'response_key' => env('IGS_FIELD_RESPONSE_KEY', 'filename'),
+
+    // Whether the field should record uploads to the igs_media table automatically.
+    'record_uploads' => env('IGS_FIELD_RECORD_UPLOADS', true),
+
+    // The table to record uploads to.
+    'media_table' => env('IGS_FIELD_MEDIA_TABLE', 'igs_media'),
 ];

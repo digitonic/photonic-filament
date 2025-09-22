@@ -11,6 +11,7 @@ class IgsFieldServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('igs-field')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasMigration('create_igs_media_table');
     }
 }
