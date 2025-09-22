@@ -1,0 +1,61 @@
+{
+  "name": "digitonic/igs-field",
+  "description": "The Filament IGS Field is a custom input component designed specifically for ingesting pictures and returning an appropriate CDN link for them",
+  "keywords": [
+    "laravel",
+    "filament",
+    "filament-igs-field"
+  ],
+  "homepage": "https://github.com/digitonic/igs-field",
+  "license": "MIT",
+  "authors": [
+  ],
+  "require": {
+    "php": "^8.2|^8.3",
+    "filament/filament": "^3.0",
+    "spatie/laravel-package-tools": "^1.92"
+  },
+  "require-dev": {
+    "larastan/larastan": "^3.0",
+    "laravel/pint": "^1.21",
+    "orchestra/testbench": "^9.0|^10.0",
+    "pestphp/pest": "^3.7.4",
+    "pestphp/pest-plugin-laravel": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Digitonic\\Filament\\IgsField\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Digitonic\\Filament\\IgsField\\Tests\\": "tests"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Digitonic\\Filament\\IgsField\\IgsFieldServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "@php ./vendor/bin/testbench icons:cache",
+      "@php ./vendor/bin/testbench package:discover --ansi"
+    ],
+    "analyse": "vendor/bin/phpstan analyse",
+    "test": "vendor/bin/pest",
+    "test-coverage": "vendor/bin/pest --coverage",
+    "format": "vendor/bin/pint"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true,
+      "phpstan/extension-installer": true
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
