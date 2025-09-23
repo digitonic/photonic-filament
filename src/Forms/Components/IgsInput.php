@@ -3,6 +3,7 @@
 namespace Digitonic\Filament\IgsField\Forms\Components;
 
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -40,8 +41,14 @@ class IgsInput extends FileUpload
             try {
                 $response = Http::asMultipart()
                     ->attach($fileField, $stream, $file->getClientOriginalName())
+                    ->withHeaders([
+                        'Authorization' => 'Bearer ' . config('igs-field.api_key'),
+                    ])
                     ->post($endpoint . '/upload/' . config('igs-field.site_uuid'));
-            } finally {
+            } catch(RequestException $exception) {
+                return $exception->getMessage();
+            }
+            finally {
                 if (is_resource($stream)) {
                     fclose($stream);
                 }

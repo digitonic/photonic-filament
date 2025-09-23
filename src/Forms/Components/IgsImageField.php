@@ -1,0 +1,174 @@
+<?php
+
+namespace Digitonic\Filament\IgsField\Forms\Components;
+
+use Closure;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\TextInput;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
+
+/**
+ * Convenience composite field for handling IGS image upload + preview + delete
+ * with a single declaration. Example:
+ *
+ * IgsImageField::make('featured_image')
+ *     ->label('Featured Image')
+ *     ->relation('igsMedia') // defaults to 'igsMedia'
+ *     ->preset('originals'); // which CDN preset folder to preview
+ */
+class IgsImageField extends Group
+{
+    protected string $relationName = 'igsMedia';
+
+    /**
+     * Field key used to mount the IgsInput upload "dummy" state.
+     * We do not dehydrate this field to DB; it only triggers the upload.
+     */
+    protected string $uploadFieldName = 'igs_upload';
+
+    /**
+     * CDN preset path segment used for preview URL (e.g. 'originals', 'featured').
+     */
+    protected string $previewPreset = 'originals';
+
+    /**
+     * Whether to show the remove action.
+     */
+    protected bool $showRemoveAction = true;
+
+    /**
+     * Additional CSS classes applied to the preview <img> tag.
+     */
+    protected string $previewClasses = 'rounded-xl max-w-full h-auto';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Build inner schema during setup so it can react to configured properties.
+        $this->schema([
+            // 1) Uploader - only visible when no related media exists.
+            IgsInput::make($this->uploadFieldName)
+                ->label($this->getLabel())
+                // Avoid saving uploader value to model
+                ->dehydrated(false)
+                // single file for this helper – users can still override by extending later if needed
+                ->multiple(false)
+                // Hide uploader if a record already has media via relation
+                ->hidden(fn (?Model $record): bool => (bool) ($record?->{$this->relationName} ?? null))
+                // Ensure it records to media table by default so relation can exist
+                ->recordToMedia(true)
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            // 2) Preview placeholder - only visible when relation exists
+            Placeholder::make('img_preview' . '_preview_' . Str::random(2))
+                ->label($this->getLabel())
+                ->hidden(fn (?Model $record): bool => ! (bool) ($record?->{$this->relationName} ?? null))
+                ->content(function (?Model $record) {
+                    $media = $record?->{$this->relationName} ?? null;
+                    if (! $record || ! $media) {
+                        return 'No image available';
+                    }
+
+                    $filename = $media->filename ?? null;
+                    if (! $filename) {
+                        return 'No image available';
+                    }
+
+                    $html = view('igs-field::components.image', [
+                        'filename' => $filename,
+                        'preset' => $this->previewPreset,
+                        'class' => $this->previewClasses,
+                        'alt' => $this->getLabel() ?: $filename,
+                    ])->render();
+
+                    return new HtmlString($html);
+                })
+                ->extraAttributes(['class' => 'prose'])
+                ->columnSpanFull(),
+
+            // 3) Remove / replace action
+            Actions::make([
+                Action::make('removeIgsImage')
+                    ->label(__('Remove Image'))
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->hidden(fn (?Model $record): bool => ! (bool) ($record?->{$this->relationName} ?? null))
+                    ->action(function (?Model $record, $livewire) {
+                        if ($record && $record->{$this->relationName}) {
+                            // Delete the related media record
+                            $relation = $record->{$this->relationName}();
+                            if (method_exists($relation, 'delete')) {
+                                $relation->delete();
+                            } else {
+                                // If relation is already loaded as a model instance
+                                $record->{$this->relationName}->delete();
+                            }
+
+                            // Refresh the record and re-render
+                            $record->refresh();
+                            $livewire->dispatch('$refresh');
+                        }
+                    }),
+            ])->columnSpanFull()
+                ->visible($this->showRemoveAction),
+        ]);
+    }
+
+    /**
+     * Set the Eloquent relation name used to detect and delete media.
+     */
+    public function relation(string $name): static
+    {
+        $this->relationName = $name;
+        // Rebuild schema reflecting the new relation
+        return $this->refreshSchema();
+    }
+
+    /**
+     * Set the preview preset (CDN folder segment).
+     */
+    public function preset(string $preset): static
+    {
+        $this->previewPreset = $preset;
+        return $this->refreshSchema();
+    }
+
+    /**
+     * Override CSS classes applied to preview image.
+     */
+    public function previewClasses(string $classes): static
+    {
+        $this->previewClasses = $classes;
+        return $this->refreshSchema();
+    }
+
+    /**
+     * Toggle the remove action visibility.
+     */
+    public function deletable(bool $enabled = true): static
+    {
+        $this->showRemoveAction = $enabled;
+        return $this->refreshSchema();
+    }
+
+    /**
+     * Utility to force Filament to re-evaluate inner schema after property change.
+     */
+    protected function refreshSchema(): static
+    {
+        // Trigger setUp again by resetting schema. Filament will call setUp during hydration; here
+        // we simply replace the schema now for builder-time changes.
+        $this->schema([]);
+        $this->setUp();
+
+        return $this;
+    }
+}

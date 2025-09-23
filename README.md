@@ -196,3 +196,32 @@ Render images from your CDN/IGS using a simple Blade component. It requires only
 ## License
 
 MIT
+
+
+### All-in-one helper field (upload + preview + delete)
+
+If you prefer to add a single field to your Filament form that handles the common flow of uploading an image, previewing it from your CDN, and removing/replacing it, use the composite helper:
+
+```
+use Digitonic\Filament\IgsField\Forms\Components\IgsImageField;
+
+IgsImageField::make('featured_image')
+    ->label('Featured Image')
+    // Name of the Eloquent relation that holds the media record (default: 'igsMedia')
+    ->relation('igsMedia')
+    // Which preset/folder to use when building the preview URL (default: 'originals')
+    ->preset('originals')
+    // Override preview <img> classes if desired
+    ->previewClasses('rounded-xl max-w-full h-auto')
+    // Show or hide the delete button (default: true)
+    ->deletable(true);
+```
+
+What it does under the hood:
+- Shows an `IgsInput` uploader when the record has no related media yet. Uploads are recorded to the `igs_media` table by default.
+- Once media exists (via the `relation`), it hides the uploader and displays a preview using the package's Blade component `<x-igs-field::image>` and your configured `cdn_endpoint` and `site_uuid`.
+- Renders a “Remove Image” action that deletes the related media row and refreshes the form so the uploader is shown again.
+
+Notes:
+- The helper does not dehydrate the uploader state to the model (the filename is stored in the `igs_media` relation table instead). If you also need to store the filename on the model itself, use `IgsInput` directly.
+- The relation name is configurable via `->relation('...')`; it defaults to `igsMedia`.

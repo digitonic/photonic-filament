@@ -8,6 +8,7 @@ return [
     'cdn_endpoint' => env('IGS_FIELD_CDN_ENDPOINT', 'https://minio.herd.test/igs'),
 
     'site_uuid' => env('IGS_FIELD_SITE_UUID'),
+    'api_key' => env('IGS_FIELD_API_KEY'),
 
     // The multipart field name the API expects for the uploaded file.
     'file_field' => env('IGS_FIELD_FILE_FIELD', 'file'),
