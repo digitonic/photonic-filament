@@ -5,6 +5,7 @@ return [
     // returns a filename to be stored in your application's database.
     // You can override this in your app's config or via IGS_FIELD_ENDPOINT env var.
     'endpoint' => env('IGS_FIELD_ENDPOINT', 'https://igs.test/api'),
+    'cdn_endpoint' => env('IGS_FIELD_CDN_ENDPOINT', 'https://minio.herd.test/igs'),
 
     'site_uuid' => env('IGS_FIELD_SITE_UUID'),
 

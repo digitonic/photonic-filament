@@ -21,6 +21,8 @@ class IgsInput extends FileUpload
 
         // Treat as image upload by default
         $this->image();
+        $this->multiple();
+        $this->previewable(false);
 
         // Intercept the save process to send the file to the IGS API and
         // store the returned filename in the field state / database.
@@ -65,8 +67,6 @@ class IgsInput extends FileUpload
                     }
                 }
             }
-
-            dump('filename, check', $filename);
 
             if ($filename === null) {
                 // Fallback to raw body

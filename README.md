@@ -45,6 +45,9 @@ return [
     // The API endpoint that receives the uploaded image and responds with a filename.
     'endpoint' => env('IGS_FIELD_ENDPOINT', 'https://igs.test/api'),
 
+    // The CDN/base URL used to display images in your app (consumed by the Blade component below).
+    'cdn_endpoint' => env('IGS_FIELD_CDN_ENDPOINT', 'https://cdn.example.com/igs'),
+
     'site_uuid' => env('IGS_FIELD_SITE_UUID'),
 
     // The multipart field name used when sending the file.
@@ -67,6 +70,7 @@ You can override these values in your `.env`:
 
 ```
 IGS_FIELD_ENDPOINT=https://igs.test/api
+IGS_FIELD_CDN_ENDPOINT=https://cdn.example.com/igs
 IGS_FIELD_SITE_UUID=
 IGS_FIELD_FILE_FIELD=file
 IGS_FIELD_RESPONSE_KEY=filename
@@ -110,6 +114,36 @@ You can disable this globally via config or per field:
 IgsInput::make('image_filename')->recordToMedia(false);
 ```
 
+### Relating models to media (UsesIgsMedia trait)
+
+Add a reusable trait to any Eloquent model that should have images associated with it:
+
+```
+use Illuminate\Database\Eloquent\Model;
+use Digitonic\Filament\IgsField\Concerns\UsesIgsMedia;
+
+class Post extends Model
+{
+    use UsesIgsMedia;
+}
+```
+
+This gives you a polymorphic relation using the `igs_media` table:
+
+- `$post->igsMedia` — access all media rows for the model.
+- `$post->igsMedia()->latest()->first()` — access the most recent row.
+- `$post->addIgsMedia('filename.jpg', ['thumb' => 'filename-thumb.jpg'])` — convenience helper to attach a new row.
+- `$post->removeIgsMedia($id)` — remove a specific media row by id (only if it belongs to the model).
+
+The inverse relation is available on the media model:
+
+```
+use Digitonic\Filament\IgsField\Models\IgsMedia;
+
+$media = IgsMedia::query()->first();
+$owner = $media->model; // The owning model instance
+```
+
 ### Per-field overrides
 
 You may override config values per field instance when needed:
@@ -130,6 +164,29 @@ IgsInput::make('image_filename')
   3. The raw response body text.
 
 If the response is an error (non-2xx), the field will throw an exception and display the error inside Filament.
+
+### Display images anywhere (Blade component)
+
+Render images from your CDN/IGS using a simple Blade component. It requires only the filename, and optionally a preset, classes, and alt text.
+
+```
+<x-igs-field::image 
+    :filename="$article->igsMedia()->latest()->first()?->filename"
+    preset="featured"
+    alt="{{ $article->title }}"
+    class="object-cover w-auto rounded"
+/>
+```
+
+- URL format: `{{ config('igs-field.cdn_endpoint') }}/{{ config('igs-field.site_uuid') }}/{preset}/{filename}`
+- Props:
+  - `filename` (string, required) — The stored filename returned by the IGS API.
+  - `preset` (string, default `featured`) — Path segment between site UUID and filename (e.g., `thumb`, `featured`).
+  - `alt` (string, optional) — Alt text, defaults to the filename.
+  - `class` (string, default `object-cover w-auto`) — CSS classes; pass your own to override.
+- Behavior:
+  - If `filename` is empty/null, the component renders nothing.
+  - Additional attributes (e.g., `loading="lazy"`, `width`, `height`) are passed through to the underlying `<img>` tag.
 
 ## Notes
 
