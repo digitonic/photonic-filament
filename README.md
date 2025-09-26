@@ -1,11 +1,11 @@
-# Filament IGS Field
+# Filament Lume Field
 
-A custom Filament 3 form field that uploads an image to a third‑party IGS service and stores the returned filename in your application's database. No local storage of the uploaded image is performed by the field.
+A custom Filament 3 form field that uploads an image to a third‑party Lume service and stores the returned filename in your application's database. No local storage of the uploaded image is performed by the field.
 
 - Sends the uploaded image to a configurable API endpoint.
 - Expects the API to return a filename (in JSON or plain text).
 - The field state is replaced with the returned filename, so your Eloquent model column stores that value directly.
-- Optionally records each upload to the igs_media table with model_type, model_id, filename, and presets.
+- Optionally records each upload to the lume_media table with model_type, model_id, filename, and presets.
 
 ## Requirements
 
@@ -18,14 +18,14 @@ A custom Filament 3 form field that uploads an image to a third‑party IGS serv
 Install via Composer:
 
 ```
-composer require digitonic/igs-field
+composer require digitonic/filament-lume
 ```
 
 The package is auto-discovered by Laravel. Publish the config and migration files:
 
 ```
-php artisan vendor:publish --tag=igs-field-config
-php artisan vendor:publish --tag=igs-field-migrations
+php artisan vendor:publish --tag=filament-lume-config
+php artisan vendor:publish --tag=filament-lume-migrations
 ```
 
 Then run the migration:
@@ -34,48 +34,48 @@ Then run the migration:
 php artisan migrate
 ```
 
-This will create `config/igs-field.php` in your application and add a migration for the `igs_media` table.
+This will create `config/filament-lume.php` in your application and add a migration for the `igs_media` table.
 
 ## Configuration
 
-Default configuration (config/igs-field.php):
+Default configuration (config/filament-lume.php):
 
 ```
 return [
     // The API endpoint that receives the uploaded image and responds with a filename.
-    'endpoint' => env('IGS_FIELD_ENDPOINT', 'https://igs.test/api'),
+    'endpoint' => env('LUME_ENDPOINT', 'https://igs.test/api'),
 
     // The CDN/base URL used to display images in your app (consumed by the Blade component below).
-    'cdn_endpoint' => env('IGS_FIELD_CDN_ENDPOINT', 'https://cdn.example.com/igs'),
+    'cdn_endpoint' => env('LUME_CDN_ENDPOINT', 'https://cdn.example.com/igs'),
 
-    'site_uuid' => env('IGS_FIELD_SITE_UUID'),
+    'site_uuid' => env('LUME_SITE_UUID'),
 
     // The multipart field name used when sending the file.
-    'file_field' => env('IGS_FIELD_FILE_FIELD', 'file'),
+    'file_field' => env('LUME_FILE_FIELD', 'file'),
 
     // The response key to read the filename from, if the response is JSON.
     // If null or if the key doesn't exist, the field falls back to common keys
     // or the raw body text.
-    'response_key' => env('IGS_FIELD_RESPONSE_KEY', 'filename'),
+    'response_key' => env('LUME_RESPONSE_KEY', 'filename'),
 
     // Whether to record uploads to the igs_media table automatically.
-    'record_uploads' => env('IGS_FIELD_RECORD_UPLOADS', true),
+    'record_uploads' => env('LUME_RECORD_UPLOADS', true),
 
     // The table to write the records to.
-    'media_table' => env('IGS_FIELD_MEDIA_TABLE', 'igs_media'),
+    'media_table' => env('LUME_MEDIA_TABLE', 'igs_media'),
 ];
 ```
 
 You can override these values in your `.env`:
 
 ```
-IGS_FIELD_ENDPOINT=https://igs.test/api
-IGS_FIELD_CDN_ENDPOINT=https://cdn.example.com/igs
-IGS_FIELD_SITE_UUID=
-IGS_FIELD_FILE_FIELD=file
-IGS_FIELD_RESPONSE_KEY=filename
-IGS_FIELD_RECORD_UPLOADS=true
-IGS_FIELD_MEDIA_TABLE=igs_media
+LUME_ENDPOINT=https://igs.test/api
+LUME_CDN_ENDPOINT=https://cdn.example.com/igs
+LUME_SITE_UUID=
+LUME_FILE_FIELD=file
+LUME_RESPONSE_KEY=filename
+LUME_RECORD_UPLOADS=true
+LUME_MEDIA_TABLE=igs_media
 ```
 
 ## Usage
@@ -107,7 +107,7 @@ By default, the field will record each successful upload to the `igs_media` tabl
 You can disable this globally via config or per field:
 
 ```
-// Disable globally in config/igs-field.php
+// Disable globally in config/filament-lume.php
 'record_uploads' => false,
 
 // Or per field instance
@@ -157,7 +157,7 @@ IgsInput::make('image_filename')
 
 ### Expected API behavior
 
-- The field sends a `multipart/form-data` POST request to `igs-field.endpoint` + `/upload/{site_uuid}`, attaching the file under the key from `igs-field.file_field` (defaults to `file`).
+- The field sends a `multipart/form-data` POST request to `filament-lume.endpoint` + `/upload/{site_uuid}`, attaching the file under the key from `filament-lume.file_field` (defaults to `file`).
 - The field expects the response to contain a filename to store. It will try, in order:
   1. The configured `response_key` (default `filename`) from JSON.
   2. Common keys: `filename`, `file`, or `name` from JSON.
@@ -170,7 +170,7 @@ If the response is an error (non-2xx), the field will throw an exception and dis
 Render images from your CDN/IGS using a simple Blade component. It requires only the filename, and optionally a preset, classes, and alt text.
 
 ```
-<x-igs-field::image 
+<x-filament-lume::image 
     :filename="$article->igsMedia()->latest()->first()?->filename"
     preset="featured"
     alt="{{ $article->title }}"
@@ -178,7 +178,7 @@ Render images from your CDN/IGS using a simple Blade component. It requires only
 />
 ```
 
-- URL format: `{{ config('igs-field.cdn_endpoint') }}/{{ config('igs-field.site_uuid') }}/{preset}/{filename}`
+- URL format: `{{ config('filament-lume.cdn_endpoint') }}/{{ config('filament-lume.site_uuid') }}/{preset}/{filename}`
 - Props:
   - `filename` (string, required) — The stored filename returned by the IGS API.
   - `preset` (string, default `featured`) — Path segment between site UUID and filename (e.g., `thumb`, `featured`).
@@ -219,7 +219,7 @@ IgsImageField::make('featured_image')
 
 What it does under the hood:
 - Shows an `IgsInput` uploader when the record has no related media yet. Uploads are recorded to the `igs_media` table by default.
-- Once media exists (via the `relation`), it hides the uploader and displays a preview using the package's Blade component `<x-igs-field::image>` and your configured `cdn_endpoint` and `site_uuid`.
+- Once media exists (via the `relation`), it hides the uploader and displays a preview using the package's Blade component `<x-filament-lume::image>` and your configured `cdn_endpoint` and `site_uuid`.
 - Renders a “Remove Image” action that deletes the related media row and refreshes the form so the uploader is shown again.
 
 Notes:

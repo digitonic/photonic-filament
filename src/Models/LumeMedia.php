@@ -1,18 +1,18 @@
 <?php
 
-namespace Digitonic\Filament\IgsField\Models;
+namespace Digitonic\Filament\Lume\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class IgsMedia extends Model
+class LumeMedia extends Model
 {
     /**
      * Use the configured table name, defaulting to 'igs_media'.
      */
     public function getTable(): string
     {
-        return (string) config('igs-field.media_table', 'igs_media');
+        return (string) config('filament-lume.media_table', 'lume_media');
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\Filament\IgsField\Forms\Components;
+namespace Digitonic\Filament\Lume\Forms\Components;
 
 use Filament\Forms\Components\FileUpload;
 use Illuminate\Http\Client\RequestException;
@@ -9,12 +9,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class IgsInput extends FileUpload
+class LumeInput extends FileUpload
 {
-    protected ?string $igsEndpoint = null;
-    protected ?string $igsFileField = null;
-    protected ?string $igsResponseKey = null;
-    protected ?bool $igsRecordUploads = null;
+    protected ?string $lumeEndpoint = null;
+
+    protected ?string $lumeFileField = null;
+
+    protected ?string $lumeResponseKey = null;
+
+    protected ?bool $lumeRecordUploads = null;
 
     protected function setUp(): void
     {
@@ -25,15 +28,15 @@ class IgsInput extends FileUpload
         $this->multiple();
         $this->previewable(false);
 
-        // Intercept the save process to send the file to the IGS API and
+        // Intercept the save process to send the file to the lume API and
         // store the returned filename in the field state / database.
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
-            $endpoint = $this->igsEndpoint ?? config('igs-field.endpoint');
-            $fileField = $this->igsFileField ?? config('igs-field.file_field', 'file');
-            $responseKey = $this->igsResponseKey ?? config('igs-field.response_key', 'filename');
+            $endpoint = $this->lumeEndpoint ?? config('filament-lume.endpoint');
+            $fileField = $this->lumeFileField ?? config('filament-lume.file_field', 'file');
+            $responseKey = $this->lumeResponseKey ?? config('filament-lume.response_key', 'filename');
 
             if (blank($endpoint)) {
-                throw new \RuntimeException('IGS endpoint is not configured. Set igs-field.endpoint in your config.');
+                throw new \RuntimeException('Lume endpoint is not configured. Set filament-lume.endpoint in your config.');
             }
 
             $stream = Storage::readStream($file->getRealPath());
@@ -42,13 +45,12 @@ class IgsInput extends FileUpload
                 $response = Http::asMultipart()
                     ->attach($fileField, $stream, $file->getClientOriginalName())
                     ->withHeaders([
-                        'Authorization' => 'Bearer ' . config('igs-field.api_key'),
+                        'Authorization' => 'Bearer '.config('filament-lume.api_key'),
                     ])
-                    ->post($endpoint . '/upload/' . config('igs-field.site_uuid'));
-            } catch(RequestException $exception) {
+                    ->post($endpoint.'/upload/'.config('filament-lume.site_uuid'));
+            } catch (RequestException $exception) {
                 return $exception->getMessage();
-            }
-            finally {
+            } finally {
                 if (is_resource($stream)) {
                     fclose($stream);
                 }
@@ -88,7 +90,7 @@ class IgsInput extends FileUpload
             }
 
             // Optionally record the upload in the igs_media table
-            $shouldRecord = $this->igsRecordUploads ?? (bool) config('igs-field.record_uploads', true);
+            $shouldRecord = $this->igsRecordUploads ?? (bool) config('filament-lume.record_uploads', true);
             if ($shouldRecord) {
                 $this->recordUpload($filename, is_array($json) ? $json : null);
             }
@@ -160,7 +162,7 @@ class IgsInput extends FileUpload
                 }
             }
 
-            DB::table((string) config('igs-field.media_table', 'igs_media'))->insert([
+            DB::table((string) config('filament-lume.media_table', 'lume_media'))->insert([
                 'model_type' => $modelClass,
                 'model_id' => $modelId,
                 'filename' => $filename,
@@ -171,7 +173,7 @@ class IgsInput extends FileUpload
         } catch (\Throwable $e) {
             // Do not block the upload on recording failure; consider logging if app has logger
             if (function_exists('logger')) {
-                logger()->warning('IGS field failed to record upload to media table', [
+                logger()->warning('Lume field failed to record upload to media table', [
                     'error' => $e->getMessage(),
                 ]);
             }

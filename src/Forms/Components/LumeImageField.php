@@ -1,13 +1,11 @@
 <?php
 
-namespace Digitonic\Filament\IgsField\Forms\Components;
+namespace Digitonic\Filament\Lume\Forms\Components;
 
-use Closure;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -21,15 +19,15 @@ use Illuminate\Support\Str;
  *     ->relation('igsMedia') // defaults to 'igsMedia'
  *     ->preset('originals'); // which CDN preset folder to preview
  */
-class IgsImageField extends Group
+class LumeImageField extends Group
 {
-    protected string $relationName = 'igsMedia';
+    protected string $relationName = 'lumeMedia';
 
     /**
      * Field key used to mount the IgsInput upload "dummy" state.
      * We do not dehydrate this field to DB; it only triggers the upload.
      */
-    protected string $uploadFieldName = 'igs_upload';
+    protected string $uploadFieldName = 'lume_upload';
 
     /**
      * CDN preset path segment used for preview URL (e.g. 'originals', 'featured').
@@ -53,7 +51,7 @@ class IgsImageField extends Group
         // Build inner schema during setup so it can react to configured properties.
         $this->schema([
             // 1) Uploader - only visible when no related media exists.
-            IgsInput::make($this->uploadFieldName)
+            LumeInput::make($this->uploadFieldName)
                 ->label($this->getLabel())
                 // Avoid saving uploader value to model
                 ->dehydrated(false)
@@ -68,7 +66,7 @@ class IgsImageField extends Group
                 ]),
 
             // 2) Preview placeholder - only visible when relation exists
-            Placeholder::make('img_preview' . '_preview_' . Str::random(2))
+            Placeholder::make('img_preview'.'_preview_'.Str::random(2))
                 ->label($this->getLabel())
                 ->hidden(fn (?Model $record): bool => ! (bool) ($record?->{$this->relationName} ?? null))
                 ->content(function (?Model $record) {
@@ -82,7 +80,7 @@ class IgsImageField extends Group
                         return 'No image available';
                     }
 
-                    $html = view('igs-field::components.image', [
+                    $html = view('filament-lume::components.image', [
                         'filename' => $filename,
                         'preset' => $this->previewPreset,
                         'class' => $this->previewClasses,
@@ -128,6 +126,7 @@ class IgsImageField extends Group
     public function relation(string $name): static
     {
         $this->relationName = $name;
+
         // Rebuild schema reflecting the new relation
         return $this->refreshSchema();
     }
@@ -138,6 +137,7 @@ class IgsImageField extends Group
     public function preset(string $preset): static
     {
         $this->previewPreset = $preset;
+
         return $this->refreshSchema();
     }
 
@@ -147,6 +147,7 @@ class IgsImageField extends Group
     public function previewClasses(string $classes): static
     {
         $this->previewClasses = $classes;
+
         return $this->refreshSchema();
     }
 
@@ -156,6 +157,7 @@ class IgsImageField extends Group
     public function deletable(bool $enabled = true): static
     {
         $this->showRemoveAction = $enabled;
+
         return $this->refreshSchema();
     }
 

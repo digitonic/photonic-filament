@@ -19,8 +19,8 @@
 
 @if ($filename)
     @php
-        $cdn = (string) config('igs-field.cdn_endpoint');
-        $site = (string) config('igs-field.site_uuid');
+        $cdn = (string) config('filament-lume.cdn_endpoint');
+        $site = (string) config('filament-lume.site_uuid');
 
         $presetSegment = trim((string) $preset, '/');
         $src = rtrim($cdn, '/')
