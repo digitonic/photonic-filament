@@ -46,8 +46,9 @@ class LumeInput extends FileUpload
                     ->attach($fileField, $stream, $file->getClientOriginalName())
                     ->withHeaders([
                         'Authorization' => 'Bearer '.config('filament-lume.api_key'),
+                        'X-Site-UUID' => config('filament-lume.site_uuid'),
                     ])
-                    ->post($endpoint.'/upload/'.config('filament-lume.site_uuid'));
+                    ->post($endpoint.'/images');
             } catch (RequestException $exception) {
                 return $exception->getMessage();
             } finally {
@@ -104,7 +105,7 @@ class LumeInput extends FileUpload
      */
     public function endpoint(?string $endpoint): static
     {
-        $this->igsEndpoint = $endpoint;
+        $this->lumeEndpoint = $endpoint;
 
         return $this;
     }
@@ -114,7 +115,7 @@ class LumeInput extends FileUpload
      */
     public function fileField(string $name): static
     {
-        $this->igsFileField = $name;
+        $this->lumeFileField = $name;
 
         return $this;
     }
@@ -124,7 +125,7 @@ class LumeInput extends FileUpload
      */
     public function responseKey(?string $key): static
     {
-        $this->igsResponseKey = $key;
+        $this->lumeResponseKey = $key;
 
         return $this;
     }
@@ -134,7 +135,7 @@ class LumeInput extends FileUpload
      */
     public function recordToMedia(bool $enabled = true): static
     {
-        $this->igsRecordUploads = $enabled;
+        $this->lumeRecordUploads = $enabled;
 
         return $this;
     }

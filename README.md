@@ -1,6 +1,6 @@
 # Filament Lume Field
 
-A custom Filament 3 form field that uploads an image to a third‑party Lume service and stores the returned filename in your application's database. No local storage of the uploaded image is performed by the field.
+A custom Filament 4 form field that uploads an image to a third‑party Lume service and stores the returned filename in your application's database. No local storage of the uploaded image is performed by the field.
 
 - Sends the uploaded image to a configurable API endpoint.
 - Expects the API to return a filename (in JSON or plain text).
@@ -10,8 +10,8 @@ A custom Filament 3 form field that uploads an image to a third‑party Lume ser
 ## Requirements
 
 - PHP 8.2+
-- Laravel 10/11
-- Filament 3
+- Laravel 11/12
+- Filament 4
 
 ## Installation
 

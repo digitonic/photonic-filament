@@ -2,10 +2,10 @@
 
 namespace Digitonic\Filament\Lume\Forms\Components;
 
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
-use Filament\Forms\Components\Group;
-use Filament\Forms\Components\Placeholder;
+use Filament\Actions\Action;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Actions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  * Convenience composite field for handling IGS image upload + preview + delete
  * with a single declaration. Example:
  *
- * IgsImageField::make('featured_image')
+ * LumeImageField::make('featured_image')
  *     ->label('Featured Image')
  *     ->relation('igsMedia') // defaults to 'igsMedia'
  *     ->preset('originals'); // which CDN preset folder to preview
@@ -52,7 +52,6 @@ class LumeImageField extends Group
         $this->schema([
             // 1) Uploader - only visible when no related media exists.
             LumeInput::make($this->uploadFieldName)
-                ->label($this->getLabel())
                 // Avoid saving uploader value to model
                 ->dehydrated(false)
                 // single file for this helper – users can still override by extending later if needed
@@ -66,10 +65,10 @@ class LumeImageField extends Group
                 ]),
 
             // 2) Preview placeholder - only visible when relation exists
-            Placeholder::make('img_preview'.'_preview_'.Str::random(2))
-                ->label($this->getLabel())
+            TextEntry::make('img_preview'.'_preview_'.Str::random(2))
+                ->label('Image Preview')
                 ->hidden(fn (?Model $record): bool => ! (bool) ($record?->{$this->relationName} ?? null))
-                ->content(function (?Model $record) {
+                ->state(function (?Model $record) {
                     $media = $record?->{$this->relationName} ?? null;
                     if (! $record || ! $media) {
                         return 'No image available';
@@ -84,7 +83,7 @@ class LumeImageField extends Group
                         'filename' => $filename,
                         'preset' => $this->previewPreset,
                         'class' => $this->previewClasses,
-                        'alt' => $this->getLabel() ?: $filename,
+                        'alt' => $filename,
                     ])->render();
 
                     return new HtmlString($html);
