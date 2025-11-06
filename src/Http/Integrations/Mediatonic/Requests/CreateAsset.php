@@ -5,6 +5,7 @@ namespace Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests;
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
 use Saloon\Contracts\Body\BodyRepository;
 use Saloon\Contracts\Body\HasBody;
+use Saloon\Data\MultipartValue;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Repositories\Body\MultipartBodyRepository;
@@ -24,8 +25,7 @@ class CreateAsset extends Request implements HasBody
 
     public function __construct(
         protected ?string $siteId,
-        protected mixed $file,
-        protected ?string $filename = null,
+        protected mixed $file
     ) {}
 
     /**
@@ -36,16 +36,12 @@ class CreateAsset extends Request implements HasBody
         return '/assets';
     }
 
-    public function body(): BodyRepository
+    public function defaultBody(): array
     {
-        $body = new MultipartBodyRepository();
-        $body->add(config('mediatonic.file_field'), $this->file, $this->filename, [
-            'headers' => [
-                'Content-Type' => $this->file->getMimeType(),
-            ],
-        ]);
-        $body->add('site_uuid', $this->siteId ?? config('mediatonic.site_uuid'));
-
-        return new MultipartBodyRepository();
+        $stream = fopen($this->file->getRealPath(), 'r');
+        return [
+            new MultipartValue('site_uuid', (string)($this->siteId ?? config('mediatonic.site_uuid'))),
+            new MultipartValue(config('mediatonic.file_field'), $stream, $this->file->getClientOriginalName()),
+        ];
     }
 }

@@ -40,43 +40,26 @@ class MediatonicInput extends FileUpload
                 throw new \RuntimeException('Endpoint is not configured. Set mediatonic.endpoint in your config.');
             }
 
-            $stream = Storage::readStream($file->getRealPath());
-
-            try {
-                $api = new Api();
-                $request = new CreateAsset(
-                    siteId: null,
-                    file: $stream,
-                    filename: $file->getClientOriginalName(),
-                );
-                $response = $api->send($request);
-
-            } finally {
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            }
+            $api = new Api();
+            $request = new CreateAsset(
+                siteId: null,
+                file: $file,
+            );
+            $response = $api->send($request);
 
             // Parse JSON response when possible
             $json = $response->json();
 
+            dd($json);
+
             // Determine the filename to return
             $filename = null;
-            if (is_array($json)) {
-                if ($responseKey && array_key_exists($responseKey, $json)) {
-                    $filename = (string) $json[$responseKey];
-                } else {
-                    foreach (['filename', 'file', 'name'] as $key) {
-                        if (array_key_exists($key, $json)) {
-                            $filename = (string) $json[$key];
-                            break;
-                        }
-                    }
-                }
+            if (array_key_exists($responseKey, $json)) {
+                $filename = (string)$json[$responseKey];
             }
 
             // Optionally record the upload in the igs_media table
-            $shouldRecord = $this->recordUploads ?? (bool) config('filament-lume.record_uploads', true);
+            $shouldRecord = $this->recordUploads ?? (bool) config('mediatonic.record_uploads', true);
             if ($shouldRecord) {
                 $this->recordUpload($filename, is_array($json) ? $json : null);
             }
