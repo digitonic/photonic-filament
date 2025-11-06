@@ -23,7 +23,7 @@ class CreateAsset extends Request implements HasBody
     protected Method $method = Method::POST;
 
     public function __construct(
-        protected string $siteId,
+        protected ?string $siteId,
         protected mixed $file,
         protected ?string $filename = null,
     ) {}
@@ -44,7 +44,7 @@ class CreateAsset extends Request implements HasBody
                 'Content-Type' => $this->file->getMimeType(),
             ],
         ]);
-        $body->add('site_uuid', $this->siteId);
+        $body->add('site_uuid', $this->siteId ?? config('mediatonic.site_uuid'));
 
         return new MultipartBodyRepository();
     }

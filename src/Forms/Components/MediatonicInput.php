@@ -37,7 +37,7 @@ class MediatonicInput extends FileUpload
             $responseKey = $this->responseKey ?? config('mediatonic.response_key', 'filename');
 
             if (blank($endpoint)) {
-                throw new \RuntimeException('Lume endpoint is not configured. Set filament-lume.endpoint in your config.');
+                throw new \RuntimeException('Endpoint is not configured. Set mediatonic.endpoint in your config.');
             }
 
             $stream = Storage::readStream($file->getRealPath());
@@ -45,7 +45,7 @@ class MediatonicInput extends FileUpload
             try {
                 $api = new Api();
                 $request = new CreateAsset(
-                    siteId: config('mediatonic.site_uuid'),
+                    siteId: null,
                     file: $stream,
                     filename: $file->getClientOriginalName(),
                 );
