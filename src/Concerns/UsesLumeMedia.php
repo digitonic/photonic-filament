@@ -2,7 +2,7 @@
 
 namespace Digitonic\Filament\Lume\Concerns;
 
-use Digitonic\Filament\Lume\Models\LumeMedia;
+use Digitonic\Filament\Lume\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait UsesLumeMedia
@@ -12,13 +12,13 @@ trait UsesLumeMedia
      */
     public function lumeMedia(): MorphOne
     {
-        return $this->morphOne(LumeMedia::class, name: 'model', type: 'model_type', id: 'model_id');
+        return $this->morphOne(Media::class, name: 'model', type: 'model_type', id: 'model_id');
     }
 
     /**
      * Convenience helper to attach a new media row to this model.
      */
-    public function addLumeMedia(string $filename, ?array $presets = null): LumeMedia
+    public function addLumeMedia(string $filename, ?array $presets = null): Media
     {
         return $this->lumeMedia()->create([
             'filename' => $filename,

@@ -1,18 +1,18 @@
 <?php
 
-namespace Digitonic\Filament\Lume;
+namespace Digitonic\Mediatonic\Filament;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class LumeServiceProvider extends PackageServiceProvider
+class MediatonicServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
         $package
-            ->name('filament-lume')
+            ->name('mediatonic-filament')
             ->hasConfigFile()
-            ->hasMigration('create_lume_media_table')
+            ->hasMigration('create_mediatonic_table')
             ->hasViews();
     }
 }

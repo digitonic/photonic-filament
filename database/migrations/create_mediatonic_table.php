@@ -1,5 +1,6 @@
 <?php
 
+use Digitonic\Filament\Lume\Models\Media;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -8,7 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('filament-lume.media_table'), function (Blueprint $table) {
+        $mediaModel = config('mediatonic.media_model', Media::class);
+        $tableName = (new $mediaModel)->getTable();
+        Schema::create($tableName, function (Blueprint $table) {
             $table->id();
             // Polymorphic relation to the owning model
             $table->string('model_type');

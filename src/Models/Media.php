@@ -5,7 +5,7 @@ namespace Digitonic\Filament\Lume\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class LumeMedia extends Model
+class Media extends Model
 {
     /**
      * Use the configured table name, defaulting to 'igs_media'.

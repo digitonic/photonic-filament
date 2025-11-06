@@ -1,17 +1,16 @@
 {
-  "name": "digitonic/filament-lume",
-  "description": "The Filament Lume Field is a custom input component designed specifically for ingesting pictures and returning an appropriate CDN link for them",
+  "name": "digitonic/mediatonic-filament",
+  "description": "The MediaTonic Field is a custom input component designed specifically for ingesting pictures and returning an appropriate CDN link for them",
   "keywords": [
     "laravel",
-    "filament",
-    "filament-lume"
+    "filament"
   ],
-  "homepage": "https://github.com/digitonic/filament-lume",
+  "homepage": "https://github.com/digitonic/mediatonic-filament",
   "license": "MIT",
   "authors": [
   ],
   "require": {
-    "php": "^8.2|^8.3",
+    "php": "^8.2|^8.3|^8.4",
     "filament/filament": "^4.0",
     "spatie/laravel-package-tools": "^1.92"
   },
@@ -37,7 +36,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Digitonic\\Filament\\Lume\\LumeServiceProvider"
+        "Digitonic\\Mediatonic\\Filament\\MediatonicServiceProvider"
       ]
     }
   },

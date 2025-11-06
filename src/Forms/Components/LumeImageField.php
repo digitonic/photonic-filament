@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\Filament\Lume\Forms\Components;
+namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
 use Filament\Actions\Action;
 use Filament\Infolists\Components\TextEntry;
