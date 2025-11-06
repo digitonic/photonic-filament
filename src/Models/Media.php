@@ -2,17 +2,18 @@
 
 namespace Digitonic\Mediatonic\Filament\Models;
 
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Media extends Model
 {
     /**
-     * Use the configured table name, defaulting to 'igs_media'.
-     */
+     * Use the configured table name for the media model.
+     *  If you want to change the table name, extend this model and override the getTable method.
+     *  */
     public function getTable(): string
     {
-        return (string) config('filament-lume.media_table', 'lume_media');
+        return 'mediatonic';
     }
 
     /**
@@ -20,9 +21,12 @@ class Media extends Model
      */
     protected $guarded = [];
 
-    protected $casts = [
-        'presets' => 'array',
-    ];
+    public function casts(): array
+    {
+        return [
+            'presets' => 'array',
+        ];
+    }
 
     /**
      * Inverse morph relation to the owning model.

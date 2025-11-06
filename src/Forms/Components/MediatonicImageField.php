@@ -10,24 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
-/**
- * Convenience composite field for handling IGS image upload + preview + delete
- * with a single declaration. Example:
- *
- * MediatonicImageField::make('featured_image')
- *     ->label('Featured Image')
- *     ->relation('igsMedia') // defaults to 'igsMedia'
- *     ->preset('originals'); // which CDN preset folder to preview
- */
 class MediatonicImageField extends Group
 {
-    protected string $relationName = 'lumeMedia';
+    protected string $relationName = 'mediatonicMedia';
 
     /**
-     * Field key used to mount the IgsInput upload "dummy" state.
+     * Field key used to mount the upload "dummy" state.
      * We do not dehydrate this field to DB; it only triggers the upload.
      */
-    protected string $uploadFieldName = 'lume_upload';
+    protected string $uploadFieldName = 'mediatonic_upload';
 
     /**
      * CDN preset path segment used for preview URL (e.g. 'originals', 'featured').
@@ -51,7 +42,7 @@ class MediatonicImageField extends Group
         // Build inner schema during setup so it can react to configured properties.
         $this->schema([
             // 1) Uploader - only visible when no related media exists.
-            LumeInput::make($this->uploadFieldName)
+            MediatonicInput::make($this->uploadFieldName)
                 // Avoid saving uploader value to model
                 ->dehydrated(false)
                 // single file for this helper – users can still override by extending later if needed
@@ -79,7 +70,7 @@ class MediatonicImageField extends Group
                         return 'No image available';
                     }
 
-                    $html = view('filament-lume::components.image', [
+                    $html = view('mediatonic-filament::components.image', [
                         'filename' => $filename,
                         'preset' => $this->previewPreset,
                         'class' => $this->previewClasses,

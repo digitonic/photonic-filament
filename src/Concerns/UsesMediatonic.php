@@ -2,14 +2,12 @@
 
 namespace Digitonic\Mediatonic\Filament\Concerns;
 
+use Digitonic\Mediatonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-trait UsesLumeMedia
+trait UsesMediatonic
 {
-    /**
-     * Polymorphic one-to-many relation to Lume Media records.
-     */
-    public function lumeMedia(): MorphOne
+    public function mediatonicMedia(): MorphOne
     {
         $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
         return $this->morphOne(Media::class, name: 'model', type: 'model_type', id: 'model_id');
@@ -18,9 +16,9 @@ trait UsesLumeMedia
     /**
      * Convenience helper to attach a new media row to this model.
      */
-    public function addLumeMedia(string $filename, ?array $presets = null): Media
+    public function addMediatonicMedia(string $filename, ?array $presets = null): Media
     {
-        return $this->lumeMedia()->create([
+        return $this->mediatonicMedia()->create([
             'filename' => $filename,
             'presets' => $presets,
         ]);
@@ -29,8 +27,8 @@ trait UsesLumeMedia
     /**
      * Remove a media record (by id) that belongs to this model.
      */
-    public function removeLumeMedia(int $mediaId): bool
+    public function removeMediatonicMedia(int $mediaId): bool
     {
-        return (bool) $this->lumeMedia()->whereKey($mediaId)->delete();
+        return (bool) $this->mediatonicMedia()->whereKey($mediaId)->delete();
     }
 }

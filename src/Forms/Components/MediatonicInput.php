@@ -2,6 +2,8 @@
 
 namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
 use Filament\Forms\Components\FileUpload;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
@@ -11,13 +13,13 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class MediatonicInput extends FileUpload
 {
-    protected ?string $lumeEndpoint = null;
+    protected ?string $endpoint = null;
 
-    protected ?string $lumeFileField = null;
+    protected ?string $fileField = null;
 
-    protected ?string $lumeResponseKey = null;
+    protected ?string $responseKey = null;
 
-    protected ?bool $lumeRecordUploads = null;
+    protected ?bool $recordUploads = null;
 
     protected function setUp(): void
     {
@@ -31,9 +33,8 @@ class MediatonicInput extends FileUpload
         // Intercept the save process to send the file to the lume API and
         // store the returned filename in the field state / database.
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
-            $endpoint = $this->lumeEndpoint ?? config('filament-lume.endpoint');
-            $fileField = $this->lumeFileField ?? config('filament-lume.file_field', 'file');
-            $responseKey = $this->lumeResponseKey ?? config('filament-lume.response_key', 'filename');
+            $endpoint = $this->endpoint ?? config('mediatonic.endpoint');
+            $responseKey = $this->responseKey ?? config('mediatonic.response_key', 'filename');
 
             if (blank($endpoint)) {
                 throw new \RuntimeException('Lume endpoint is not configured. Set filament-lume.endpoint in your config.');
@@ -42,23 +43,19 @@ class MediatonicInput extends FileUpload
             $stream = Storage::readStream($file->getRealPath());
 
             try {
-                $response = Http::asMultipart()
-                    ->attach($fileField, $stream, $file->getClientOriginalName())
-                    ->withHeaders([
-                        'Authorization' => 'Bearer '.config('filament-lume.api_key'),
-                        'X-Site-UUID' => config('filament-lume.site_uuid'),
-                    ])
-                    ->post($endpoint.'/images');
-            } catch (RequestException $exception) {
-                return $exception->getMessage();
+                $api = new Api();
+                $request = new CreateAsset(
+                    siteId: config('mediatonic.site_uuid'),
+                    file: $stream,
+                    filename: $file->getClientOriginalName(),
+                );
+                $response = $api->send($request);
+
             } finally {
                 if (is_resource($stream)) {
                     fclose($stream);
                 }
             }
-
-            // Throw on HTTP errors
-            $response->throw();
 
             // Parse JSON response when possible
             $json = $response->json();
@@ -78,20 +75,8 @@ class MediatonicInput extends FileUpload
                 }
             }
 
-            if ($filename === null) {
-                // Fallback to raw body
-                $body = trim((string) $response->body());
-                if ($body !== '') {
-                    $filename = $body;
-                }
-            }
-
-            if ($filename === null) {
-                throw new \RuntimeException('IGS endpoint response did not contain a filename.');
-            }
-
             // Optionally record the upload in the igs_media table
-            $shouldRecord = $this->igsRecordUploads ?? (bool) config('filament-lume.record_uploads', true);
+            $shouldRecord = $this->recordUploads ?? (bool) config('filament-lume.record_uploads', true);
             if ($shouldRecord) {
                 $this->recordUpload($filename, is_array($json) ? $json : null);
             }
@@ -105,7 +90,7 @@ class MediatonicInput extends FileUpload
      */
     public function endpoint(?string $endpoint): static
     {
-        $this->lumeEndpoint = $endpoint;
+        $this->endpoint = $endpoint;
 
         return $this;
     }
@@ -115,7 +100,7 @@ class MediatonicInput extends FileUpload
      */
     public function fileField(string $name): static
     {
-        $this->lumeFileField = $name;
+        $this->fileField = $name;
 
         return $this;
     }
@@ -125,7 +110,7 @@ class MediatonicInput extends FileUpload
      */
     public function responseKey(?string $key): static
     {
-        $this->lumeResponseKey = $key;
+        $this->responseKey = $key;
 
         return $this;
     }
@@ -135,7 +120,7 @@ class MediatonicInput extends FileUpload
      */
     public function recordToMedia(bool $enabled = true): static
     {
-        $this->lumeRecordUploads = $enabled;
+        $this->recordUploads = $enabled;
 
         return $this;
     }
@@ -163,7 +148,7 @@ class MediatonicInput extends FileUpload
                 }
             }
 
-            DB::table((string) config('filament-lume.media_table', 'lume_media'))->insert([
+            DB::table(get_mediatonic_table_name())->insert([
                 'model_type' => $modelClass,
                 'model_id' => $modelId,
                 'filename' => $filename,
@@ -174,7 +159,7 @@ class MediatonicInput extends FileUpload
         } catch (\Throwable $e) {
             // Do not block the upload on recording failure; consider logging if app has logger
             if (function_exists('logger')) {
-                logger()->warning('Lume field failed to record upload to media table', [
+                logger()->warning('Failed to record upload to media table', [
                     'error' => $e->getMessage(),
                 ]);
             }

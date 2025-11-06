@@ -21,3 +21,18 @@ if (! function_exists('mediatonic_asset')) {
             . '/' . $filename;
     }
 }
+
+if (! function_exists('get_mediatonic_table_name')) {
+    /**
+     * Parse and return a URL structure that should point to an uploaded asset.
+     *
+     * @param string $filename
+     * @param string $preset
+     * @return string|null
+     */
+    function get_mediatonic_table_name(): string
+    {
+        $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+        return (new $model())->getTable();
+    }
+}

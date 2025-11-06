@@ -1,6 +1,6 @@
-# Filament Lume Field
+# Mediatonic Filament Field
 
-A custom Filament 4 form field that uploads an image to a third‑party Lume service and stores the returned filename in your application's database. No local storage of the uploaded image is performed by the field.
+A custom Filament 4 form field that uploads an image to a third‑party Mediatonic service and stores the returned filename in your application's database. No local storage of the uploaded image is performed by the field.
 
 - Sends the uploaded image to a configurable API endpoint.
 - Expects the API to return a filename (in JSON or plain text).
@@ -10,7 +10,7 @@ A custom Filament 4 form field that uploads an image to a third‑party Lume ser
 ## Requirements
 
 - PHP 8.2+
-- Laravel 11/12
+- Laravel 12
 - Filament 4
 
 ## Installation
@@ -18,14 +18,14 @@ A custom Filament 4 form field that uploads an image to a third‑party Lume ser
 Install via Composer:
 
 ```
-composer require digitonic/filament-lume
+composer require digitonic/mediatonic-filament
 ```
 
 The package is auto-discovered by Laravel. Publish the config and migration files:
 
 ```
-php artisan vendor:publish --tag=filament-lume-config
-php artisan vendor:publish --tag=filament-lume-migrations
+php artisan vendor:publish --tag=mediatonic-filament-config
+php artisan vendor:publish --tag=mediatonic-filament-migrations
 ```
 
 Then run the migration:
@@ -34,42 +34,14 @@ Then run the migration:
 php artisan migrate
 ```
 
-This will create `config/filament-lume.php` in your application and add a migration for the `igs_media` table.
+This will create `config/mediatonic.php` in your application and add a migration for the `mediatonic` table.
 
 ## Configuration
 
-Default configuration (config/filament-lume.php):
+Default env configuration (config/mediatonic.php):
 
 ```
-return [
-    // The API endpoint that receives the uploaded image and responds with a filename.
-    'endpoint' => env('LUME_ENDPOINT', 'https://igs.test/api'),
-
-    // The CDN/base URL used to display images in your app (consumed by the Blade component below).
-    'cdn_endpoint' => env('LUME_CDN_ENDPOINT', 'https://cdn.example.com/igs'),
-
-    'site_uuid' => env('LUME_SITE_UUID'),
-
-    // The multipart field name used when sending the file.
-    'file_field' => env('LUME_FILE_FIELD', 'file'),
-
-    // The response key to read the filename from, if the response is JSON.
-    // If null or if the key doesn't exist, the field falls back to common keys
-    // or the raw body text.
-    'response_key' => env('LUME_RESPONSE_KEY', 'filename'),
-
-    // Whether to record uploads to the igs_media table automatically.
-    'record_uploads' => env('LUME_RECORD_UPLOADS', true),
-
-    // The table to write the records to.
-    'media_table' => env('LUME_MEDIA_TABLE', 'igs_media'),
-];
-```
-
-You can override these values in your `.env`:
-
-```
-LUME_ENDPOINT=https://igs.test/api
+LUME_ENDPOINT=https://mediatonic.test/api/v1
 LUME_CDN_ENDPOINT=https://cdn.example.com/igs
 LUME_SITE_UUID=
 LUME_FILE_FIELD=file
