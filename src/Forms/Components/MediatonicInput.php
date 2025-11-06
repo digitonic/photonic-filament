@@ -48,9 +48,7 @@ class MediatonicInput extends FileUpload
             $response = $api->send($request);
 
             // Parse JSON response when possible
-            $json = $response->json();
-
-            dd($json);
+            $json = $response->json()['data'];
 
             // Determine the filename to return
             $filename = null;
@@ -58,10 +56,31 @@ class MediatonicInput extends FileUpload
                 $filename = (string)$json[$responseKey];
             }
 
+            // Get the file details from the temporary uploaded file
+            $width = $height = null;
+            try {
+                $imageInfo = @getimagesize($file->getRealPath());
+                if ($imageInfo) {
+                    $width = $imageInfo[0] ?? null;
+                    $height = $imageInfo[1] ?? null;
+                }
+            } catch (\Throwable) {
+                // ignore
+            }
+
+            $fileConfig = [
+                'mime_type' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+                'size' => $file->getSize(),
+                'width' => $width,
+                'height' => $height,
+                'hash_name' => method_exists($file, 'hashName') ? $file->hashName() : null,
+            ];
+
             // Optionally record the upload in the igs_media table
             $shouldRecord = $this->recordUploads ?? (bool) config('mediatonic.record_uploads', true);
             if ($shouldRecord) {
-                $this->recordUpload($filename, is_array($json) ? $json : null);
+                $this->recordUpload($filename, is_array($json) ? $json : null, $fileConfig);
             }
 
             return $filename;
@@ -111,7 +130,7 @@ class MediatonicInput extends FileUpload
     /**
      * Insert a row into the igs_media table if model context is available.
      */
-    protected function recordUpload(string $filename, ?array $jsonResponse = null): void
+    protected function recordUpload(string $filename, ?array $jsonResponse = null, array $fileConfig): void
     {
         try {
             $modelClass = $this->getModel();
@@ -136,6 +155,7 @@ class MediatonicInput extends FileUpload
                 'model_id' => $modelId,
                 'filename' => $filename,
                 'presets' => $presets !== null ? json_encode($presets) : null,
+                'config' => $fileConfig,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

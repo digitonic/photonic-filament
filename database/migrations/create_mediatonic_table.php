@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('model_id');
             $table->string('filename');
             $table->json('presets')->nullable();
+            $table->json('config')->nullable();
             $table->timestamps();
 
             $table->index(['model_type', 'model_id']);

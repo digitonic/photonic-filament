@@ -84,7 +84,7 @@ class MediatonicImageField extends Group
 
             // 3) Remove / replace action
             Actions::make([
-                Action::make('removeIgsImage')
+                Action::make('removeMediatonicImage')
                     ->label(__('Remove Image'))
                     ->color('danger')
                     ->requiresConfirmation()

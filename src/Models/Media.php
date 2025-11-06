@@ -25,6 +25,7 @@ class Media extends Model
     {
         return [
             'presets' => 'array',
+            'config' => 'array',
         ];
     }
 
