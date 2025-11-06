@@ -1,6 +1,6 @@
 <?php
 
-use Digitonic\Filament\Lume\Models\Media;
+use Digitonic\Mediatonic\Filament\Models\Media;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +26,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('filament-lume.media_table'));
+        $mediaModel = config('mediatonic.media_model', Media::class);
+        $tableName = (new $mediaModel)->getTable();
+        Schema::dropIfExists($tableName);
     }
 };

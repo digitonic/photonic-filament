@@ -1,5 +1,7 @@
 <?php
 
+use Digitonic\Mediatonic\Filament\Models\Media;
+
 return [
     // Base URL of the third-party API that processes the uploaded image and
     // returns a filename to be stored in your application's database.
@@ -22,5 +24,5 @@ return [
     'record_uploads' => env('MEDIATONIC_RECORD_UPLOADS', true),
 
     // The table to record uploads to.
-    'media_model' => \Digitonic\Filament\Lume\Models\Media::class,
+    'media_model' => Media::class,
 ];

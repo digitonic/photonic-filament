@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\Filament\Lume\Forms\Components;
+namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
 use Filament\Forms\Components\FileUpload;
 use Illuminate\Http\Client\RequestException;
@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class LumeInput extends FileUpload
+class MediatonicInput extends FileUpload
 {
     protected ?string $lumeEndpoint = null;
 

@@ -19,8 +19,8 @@
 
 @if ($filename)
     @php
-        $cdn = (string) config('filament-lume.cdn_endpoint');
-        $site = (string) config('filament-lume.site_uuid');
+        $cdn = (string) config('mediatonic.cdn_endpoint');
+        $site = (string) config('mediatonic.site_uuid');
 
         $presetSegment = trim((string) $preset, '/');
         $src = rtrim($cdn, '/')

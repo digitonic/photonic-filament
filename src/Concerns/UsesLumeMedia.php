@@ -1,8 +1,7 @@
 <?php
 
-namespace Digitonic\Filament\Lume\Concerns;
+namespace Digitonic\Mediatonic\Filament\Concerns;
 
-use Digitonic\Filament\Lume\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 trait UsesLumeMedia
@@ -12,6 +11,7 @@ trait UsesLumeMedia
      */
     public function lumeMedia(): MorphOne
     {
+        $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
         return $this->morphOne(Media::class, name: 'model', type: 'model_type', id: 'model_id');
     }
 

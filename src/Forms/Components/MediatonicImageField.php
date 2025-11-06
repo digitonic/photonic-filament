@@ -14,12 +14,12 @@ use Illuminate\Support\Str;
  * Convenience composite field for handling IGS image upload + preview + delete
  * with a single declaration. Example:
  *
- * LumeImageField::make('featured_image')
+ * MediatonicImageField::make('featured_image')
  *     ->label('Featured Image')
  *     ->relation('igsMedia') // defaults to 'igsMedia'
  *     ->preset('originals'); // which CDN preset folder to preview
  */
-class LumeImageField extends Group
+class MediatonicImageField extends Group
 {
     protected string $relationName = 'lumeMedia';
 

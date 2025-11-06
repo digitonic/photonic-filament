@@ -9,7 +9,7 @@ if (! function_exists('mediatonic_asset')) {
      * @param string $preset
      * @return string|null
      */
-    function mediatonic_asset(string $filename, string $preset = 'original'): ?string
+    function mediatonic_asset(string $filename, string $preset = 'originals'): ?string
     {
         $cdn = (string) config('mediatonic.cdn_endpoint');
         $site = (string) config('mediatonic.site_uuid');

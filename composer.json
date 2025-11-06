@@ -25,12 +25,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Digitonic\\Filament\\Lume\\": "src"
+      "Digitonic\\Mediatonic\\Filament\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Digitonic\\Filament\\Lume\\Tests\\": "tests"
+      "Digitonic\\Mediatonic\\Filament\\Tests\\": "tests"
     }
   },
   "extra": {
