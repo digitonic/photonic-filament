@@ -89,7 +89,7 @@ class MediatonicInput extends FileUpload
             return;
         }
 
-        $model->create([
+        $model::create([
             'model_type' => $modelClass,
             'model_id' => $modelId,
             'asset_uuid' => $jsonResponse['uuid'],
