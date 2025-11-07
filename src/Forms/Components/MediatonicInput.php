@@ -2,7 +2,7 @@
 
 namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API; // ensure correct class import
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
 use Filament\Forms\Components\FileUpload;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -18,7 +18,7 @@ class MediatonicInput extends FileUpload
         $this->multiple();
         $this->previewable(false);
 
-        // Intercept the save process to send the file to the lume API and
+        // Intercept the save process to send the file to the Mediatonic API and
         // store the returned filename in the field state / database.
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
             $endpoint = config('mediatonic.endpoint');
@@ -29,7 +29,8 @@ class MediatonicInput extends FileUpload
                 throw new \RuntimeException('Endpoint is not configured. Set mediatonic.endpoint in your config.');
             }
 
-            $api = new Api;
+            // Correctly instantiate API connector
+            $api = new API;
             $request = new CreateAsset(
                 siteId: null,
                 file: $file,
@@ -37,7 +38,7 @@ class MediatonicInput extends FileUpload
             $response = $api->send($request);
 
             // Parse JSON response when possible
-            $json = $response->json()['data'];
+            $json = $response->json()['data'] ?? [];
 
             // Determine the filename to return
             $filename = null;
@@ -64,13 +65,13 @@ class MediatonicInput extends FileUpload
 
             if ($shouldRecord) {
                 $this->recordUpload(
-                    filename: $filename,
+                    filename: $filename ?? '',
                     fileConfig: $fileConfig,
                     jsonResponse: $json,
                 );
             }
 
-            return $filename;
+            return $filename ?? '';
         });
     }
 
@@ -82,17 +83,20 @@ class MediatonicInput extends FileUpload
     {
         $modelClass = $this->getModel();
         $modelId = $this->resolveCurrentRecordId();
-        $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+        $mediaModelClass = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
 
         if (! $modelClass || ! $modelId) {
             // No model context; skip recording.
             return;
         }
 
-        $model::create([
+        // Store asset_uuid (matches migration) if present in response
+        $assetUuid = $jsonResponse['uuid'] ?? null;
+
+        $mediaModelClass::create([
             'model_type' => $modelClass,
             'model_id' => $modelId,
-            'asset_uuid' => $jsonResponse['uuid'],
+            'asset_uuid' => $assetUuid,
             'filename' => $filename,
             'config' => json_encode($fileConfig),
         ]);

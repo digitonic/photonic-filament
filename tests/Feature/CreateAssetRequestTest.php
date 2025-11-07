@@ -1,0 +1,37 @@
+<?php
+
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
+use Saloon\Data\MultipartValue;
+
+it('builds multipart body with site uuid and file field', function () {
+    config()->set('mediatonic.site_uuid', 'site-xyz');
+    config()->set('mediatonic.file_field', 'file');
+
+    // Mock a file-like object with required methods
+    $file = new class
+    {
+        public function getRealPath()
+        {
+            return __FILE__;
+        }
+
+        public function getClientOriginalName()
+        {
+            return 'example.jpg';
+        }
+    };
+
+    $request = new CreateAsset(siteId: null, file: $file);
+    $body = $request->defaultBody();
+
+    expect($body)->toBeArray()->and(count($body))->toBe(2);
+
+    /** @var MultipartValue $sitePart */
+    $sitePart = $body[0];
+    /** @var MultipartValue $filePart */
+    $filePart = $body[1];
+
+    expect($sitePart->name)->toBe('site_uuid');
+    expect($filePart->name)->toBe('file');
+    expect($filePart->filename)->toBe('example.jpg');
+});
