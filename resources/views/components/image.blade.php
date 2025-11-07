@@ -1,37 +1,52 @@
 @props([
-    // Required filename to render (string). If null/empty, nothing is rendered.
     'filename' => null,
-
-    // Preset path segment to use in the CDN URL, defaults to 'featured'.
     'preset' => 'featured',
-
-    // Alt text override; defaults to the filename if not provided.
     'alt' => null,
-
-    // Default classes; can be overridden by passing a class attribute on the component
-    // or by setting this prop explicitly.
     'class' => 'object-cover w-auto',
+    'media' => null,
 ])
 
 @php
-    $filename = $filename ? ltrim((string) $filename, '/') : null;
+    if (!$filename) {
+        return;
+    }
+
+    $cdn = rtrim(config('mediatonic.cdn_endpoint'), '/');
+    $site = trim(config('mediatonic.site_uuid'), '/');
+    $rawFilename = ltrim($filename, '/');
+
+    // Parse "mediaUuid/filename.ext" or just "mediaUuid"
+    [$parsedMediaUuid, $filePart] = array_pad(explode('/', $rawFilename, 2), 2, '');
+
+    // Use explicit mediaUuid prop if provided, otherwise use parsed
+    $uuid = $media->uuid ?? $parsedMediaUuid;
+
+    // Build URL based on preset type
+    if (strtolower(trim($preset)) === 'originals') {
+        $src = sprintf(
+            '%s/%s/%s/original/%s',
+            $cdn,
+            $site,
+            $uuid,
+            ltrim($filePart, '/')
+        );
+    } else {
+        // Preset path: replace extension with .webp
+        $baseFilename = pathinfo($filePart, PATHINFO_FILENAME);
+        $webpFilename = $baseFilename . '.webp';
+
+        $src = sprintf(
+            '%s/%s/%s/presets/%s/%s',
+            $cdn,
+            $site,
+            $uuid,
+            trim($preset, '/'),
+            $webpFilename
+        );
+    }
+
+    $classes = $attributes->has('class') ? $attributes->get('class') : $class;
+    $altText = $alt ?? $filename;
 @endphp
 
-@if ($filename)
-    @php
-        $cdn = (string) config('mediatonic.cdn_endpoint');
-        $site = (string) config('mediatonic.site_uuid');
-
-        $presetSegment = trim((string) $preset, '/');
-        $src = rtrim($cdn, '/')
-            . '/' . trim($site, '/')
-            . ($presetSegment !== '' ? '/' . $presetSegment : '')
-            . '/' . $filename;
-
-        // Allow hard override of default classes when a class attribute is passed
-        $classes = $attributes->has('class') ? $attributes->get('class') : $class;
-        $altText = $alt ?? $filename;
-    @endphp
-
-    <img src="{{ $src }}" alt="{{ $altText }}" {{ $attributes->except('class') }} class="{{ $classes }}" />
-@endif
+<img src="{{ $src }}" alt="{{ $altText }}" {{ $attributes->except('class') }} class="{{ $classes }}" />

@@ -16,6 +16,7 @@ return new class extends Migration
             // Polymorphic relation to the owning model
             $table->string('model_type');
             $table->unsignedBigInteger('model_id');
+            $table->string('uuid', 36)->index();
             $table->string('filename');
             $table->json('presets')->nullable();
             $table->json('config')->nullable();

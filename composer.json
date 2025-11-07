@@ -28,7 +28,10 @@
   "autoload": {
     "psr-4": {
       "Digitonic\\Mediatonic\\Filament\\": "src"
-    }
+    },
+    "files": [
+      "src/Helpers/MediatonicHelper.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {

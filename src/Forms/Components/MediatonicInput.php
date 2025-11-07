@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
+use function get_mediatonic_table_name;
+
 class MediatonicInput extends FileUpload
 {
     protected ?string $endpoint = null;
@@ -80,7 +82,7 @@ class MediatonicInput extends FileUpload
             // Optionally record the upload in the igs_media table
             $shouldRecord = $this->recordUploads ?? (bool) config('mediatonic.record_uploads', true);
             if ($shouldRecord) {
-                $this->recordUpload($filename, is_array($json) ? $json : null, $fileConfig);
+                $this->recordUpload($filename, $fileConfig, $json['uuid'], is_array($json) ? $json : null);
             }
 
             return $filename;
@@ -130,43 +132,35 @@ class MediatonicInput extends FileUpload
     /**
      * Insert a row into the igs_media table if model context is available.
      */
-    protected function recordUpload(string $filename, ?array $jsonResponse = null, array $fileConfig): void
+    protected function recordUpload(string $filename, array $fileConfig, string $uuid, ?array $jsonResponse = null): void
     {
-        try {
-            $modelClass = $this->getModel();
-            $modelId = $this->resolveCurrentRecordId();
+        $modelClass = $this->getModel();
+        $modelId = $this->resolveCurrentRecordId();
 
-            if (! $modelClass || ! $modelId) {
-                // No model context; skip recording.
-                return;
-            }
+        if (! $modelClass || ! $modelId) {
+            // No model context; skip recording.
+            return;
+        }
 
-            $presets = null;
-            if (is_array($jsonResponse)) {
-                if (array_key_exists('presets', $jsonResponse)) {
-                    $presets = $jsonResponse['presets'];
-                } elseif (array_key_exists('preset', $jsonResponse)) {
-                    $presets = $jsonResponse['preset'];
-                }
-            }
-
-            DB::table(get_mediatonic_table_name())->insert([
-                'model_type' => $modelClass,
-                'model_id' => $modelId,
-                'filename' => $filename,
-                'presets' => $presets !== null ? json_encode($presets) : null,
-                'config' => $fileConfig,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            // Do not block the upload on recording failure; consider logging if app has logger
-            if (function_exists('logger')) {
-                logger()->warning('Failed to record upload to media table', [
-                    'error' => $e->getMessage(),
-                ]);
+        $presets = null;
+        if (is_array($jsonResponse)) {
+            if (array_key_exists('presets', $jsonResponse)) {
+                $presets = $jsonResponse['presets'];
+            } elseif (array_key_exists('preset', $jsonResponse)) {
+                $presets = $jsonResponse['preset'];
             }
         }
+
+        DB::table(get_mediatonic_table_name())->insert([
+            'model_type' => $modelClass,
+            'model_id' => $modelId,
+            'uuid' => $uuid,
+            'filename' => $filename,
+            'presets' => $presets !== null ? json_encode($presets) : null,
+            'config' => json_encode($fileConfig),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

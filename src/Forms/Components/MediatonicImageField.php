@@ -75,6 +75,7 @@ class MediatonicImageField extends Group
                         'preset' => $this->previewPreset,
                         'class' => $this->previewClasses,
                         'alt' => $filename,
+                        'media' => $media
                     ])->render();
 
                     return new HtmlString($html);
