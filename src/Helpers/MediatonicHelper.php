@@ -1,6 +1,8 @@
 <?php
 
 
+use Digitonic\Mediatonic\Filament\Enums\PresetEnum;
+
 if (! function_exists('mediatonic_asset')) {
     /**
      * Parse and return a URL structure that should point to an uploaded asset.
@@ -9,16 +11,35 @@ if (! function_exists('mediatonic_asset')) {
      * @param string $preset
      * @return string|null
      */
-    function mediatonic_asset(string $filename, string $preset = 'originals'): ?string
+    function mediatonic_asset(string $filename, string $preset = 'original'): ?string
     {
-        $cdn = (string) config('mediatonic.cdn_endpoint');
-        $site = (string) config('mediatonic.site_uuid');
+        if ($filename === '') {
+            return null;
+        }
 
+        $cdn = rtrim((string) config('mediatonic.cdn_endpoint'), '/');
+        $site = trim((string) config('mediatonic.site_uuid'), '/');
         $presetSegment = trim($preset, '/');
-        return rtrim($cdn, '/')
-            . '/' . trim($site, '/')
-            . ($presetSegment !== '' ? '/' . $presetSegment : '')
-            . '/' . $filename;
+
+        if (strtolower($presetSegment) === PresetEnum::ORIGINAL->value) {
+            return sprintf(
+                '%s/%s/original/%s',
+                $cdn,
+                $site,
+                ltrim($filename, '/')
+            );
+        }
+
+        $base = pathinfo($filename, PATHINFO_FILENAME);
+        $webpFilename = $base . '.webp';
+
+        return sprintf(
+            '%s/%s/presets/%s/%s',
+            $cdn,
+            $site,
+            $presetSegment,
+            $webpFilename
+        );
     }
 }
 

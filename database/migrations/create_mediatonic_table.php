@@ -9,17 +9,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $mediaModel = config('mediatonic.media_model', Media::class);
-        $tableName = (new $mediaModel)->getTable();
-        Schema::create($tableName, function (Blueprint $table) {
+        Schema::create(get_mediatonic_table_name(), function (Blueprint $table) {
             $table->id();
+            $table->string('asset_uuid', 36)->unique()->index(); // This is the UUID assigned by Mediatonic
             // Polymorphic relation to the owning model
             $table->string('model_type');
             $table->unsignedBigInteger('model_id');
-            $table->string('uuid', 36)->index();
-            $table->string('filename');
-            $table->json('presets')->nullable();
-            $table->json('config')->nullable();
+            $table->string('filename'); // Original filename stored in Mediatonic
+            $table->json('config')->nullable(); // meta information from Mediatonic about the asset
             $table->timestamps();
 
             $table->index(['model_type', 'model_id']);
@@ -28,8 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        $mediaModel = config('mediatonic.media_model', Media::class);
-        $tableName = (new $mediaModel)->getTable();
-        Schema::dropIfExists($tableName);
+        Schema::dropIfExists(get_mediatonic_table_name());
     }
 };
