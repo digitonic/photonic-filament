@@ -98,11 +98,11 @@ class MediatonicImageField extends Group
                     ->action(function (?Model $record, $livewire) {
                         if ($record && $record->{$this->relationName}) {
                             // Send the API call to remove the asset
-                            $api = new API();
+                            $api = new API;
                             $request = new DeleteAsset($record->{$this->relationName}->asset_uuid);
                             $response = $api->send($request);
 
-                            if($response->status() === 200) {
+                            if ($response->status() === 200) {
                                 // Delete the related media record
                                 $relation = $record->{$this->relationName}();
                                 if (method_exists($relation, 'delete')) {

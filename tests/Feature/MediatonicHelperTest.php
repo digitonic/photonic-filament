@@ -9,25 +9,28 @@ it('returns null when filename empty', function () {
 it('builds original preset URL', function () {
     config()->set('mediatonic.cdn_endpoint', 'https://cdn.example.com');
     config()->set('mediatonic.site_uuid', 'site-123');
+    $assetUuid = Str::uuid()->toString();
 
-    $url = mediatonic_asset('photo.jpg', 'original');
-    expect($url)->toBe('https://cdn.example.com/site-123/original/photo.jpg');
+    $url = mediatonic_asset('photo.jpg', $assetUuid);
+    expect($url)->toBe('https://cdn.example.com/site-123/'.$assetUuid.'/original/photo.jpg');
 });
 
 it('builds preset URL with webp extension conversion', function () {
     config()->set('mediatonic.cdn_endpoint', 'https://cdn.example.com');
     config()->set('mediatonic.site_uuid', 'site-123');
+    $assetUuid = Str::uuid()->toString();
 
-    $url = mediatonic_asset('photo.PNG', 'featured');
-    expect($url)->toBe('https://cdn.example.com/site-123/presets/featured/photo.webp');
+    $url = mediatonic_asset('photo.PNG', $assetUuid, 'featured');
+    expect($url)->toBe('https://cdn.example.com/site-123/'.$assetUuid.'/presets/featured/photo.webp');
 });
 
 it('treats ORIGINAL case-insensitively', function () {
     config()->set('mediatonic.cdn_endpoint', 'https://cdn.example.com');
     config()->set('mediatonic.site_uuid', 'site-123');
+    $assetUuid = Str::uuid()->toString();
 
-    $url1 = mediatonic_asset('photo.jpg', 'ORIGINAL');
-    $url2 = mediatonic_asset('photo.jpg', 'original');
+    $url1 = mediatonic_asset('photo.jpg', $assetUuid, 'ORIGINAL');
+    $url2 = mediatonic_asset('photo.jpg', $assetUuid, 'original');
     expect($url1)->toBe($url2);
 });
 
