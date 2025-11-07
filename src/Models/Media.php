@@ -24,8 +24,7 @@ class Media extends Model
     public function casts(): array
     {
         return [
-            'presets' => 'array',
-            'config' => 'array',
+            'config' => 'json',
         ];
     }
 

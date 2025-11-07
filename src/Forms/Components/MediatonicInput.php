@@ -98,7 +98,7 @@ class MediatonicInput extends FileUpload
             'model_id' => $modelId,
             'asset_uuid' => $assetUuid,
             'filename' => $filename,
-            'config' => json_encode($fileConfig),
+            'config' => $fileConfig,
         ]);
     }
 

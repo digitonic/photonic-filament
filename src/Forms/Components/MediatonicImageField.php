@@ -3,6 +3,8 @@
 namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
 use Digitonic\Mediatonic\Filament\Enums\PresetEnum;
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\DeleteAsset;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
@@ -95,18 +97,25 @@ class MediatonicImageField extends Group
                     ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
                     ->action(function (?Model $record, $livewire) {
                         if ($record && $record->{$this->relationName}) {
-                            // Delete the related media record
-                            $relation = $record->{$this->relationName}();
-                            if (method_exists($relation, 'delete')) {
-                                $relation->delete();
-                            } else {
-                                // If relation is already loaded as a model instance
-                                $record->{$this->relationName}->delete();
-                            }
+                            // Send the API call to remove the asset
+                            $api = new API();
+                            $request = new DeleteAsset($record->{$this->relationName}->asset_uuid);
+                            $response = $api->send($request);
 
-                            // Refresh the record and re-render
-                            $record->refresh();
-                            $livewire->dispatch('$refresh');
+                            if($response->status() === 200) {
+                                // Delete the related media record
+                                $relation = $record->{$this->relationName}();
+                                if (method_exists($relation, 'delete')) {
+                                    $relation->delete();
+                                } else {
+                                    // If relation is already loaded as a model instance
+                                    $record->{$this->relationName}->delete();
+                                }
+
+                                // Refresh the record and re-render
+                                $record->refresh();
+                                $livewire->dispatch('$refresh');
+                            }
                         }
                     }),
             ])->columnSpanFull()
