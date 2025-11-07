@@ -10,7 +10,8 @@ trait UsesMediatonic
     public function mediatonicMedia(): MorphOne
     {
         $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
-        return $this->morphOne(Media::class, name: 'model', type: 'model_type', id: 'model_id');
+
+        return $this->morphOne($model, name: 'model', type: 'model_type', id: 'model_id');
     }
 
     /**

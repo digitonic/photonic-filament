@@ -5,24 +5,10 @@ namespace Digitonic\Mediatonic\Filament\Forms\Components;
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
 use Filament\Forms\Components\FileUpload;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-
-use function get_mediatonic_table_name;
 
 class MediatonicInput extends FileUpload
 {
-    protected ?string $endpoint = null;
-
-    protected ?string $fileField = null;
-
-    protected ?string $responseKey = null;
-
-    protected ?bool $recordUploads = null;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,14 +21,15 @@ class MediatonicInput extends FileUpload
         // Intercept the save process to send the file to the lume API and
         // store the returned filename in the field state / database.
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
-            $endpoint = $this->endpoint ?? config('mediatonic.endpoint');
-            $responseKey = $this->responseKey ?? config('mediatonic.response_key', 'filename');
+            $endpoint = config('mediatonic.endpoint');
+            $responseKey = config('mediatonic.response_key', 'filename');
+            $shouldRecord = (bool) config('mediatonic.record_uploads', true);
 
             if (blank($endpoint)) {
                 throw new \RuntimeException('Endpoint is not configured. Set mediatonic.endpoint in your config.');
             }
 
-            $api = new Api();
+            $api = new Api;
             $request = new CreateAsset(
                 siteId: null,
                 file: $file,
@@ -55,19 +42,15 @@ class MediatonicInput extends FileUpload
             // Determine the filename to return
             $filename = null;
             if (array_key_exists($responseKey, $json)) {
-                $filename = (string)$json[$responseKey];
+                $filename = (string) $json[$responseKey];
             }
 
             // Get the file details from the temporary uploaded file
             $width = $height = null;
-            try {
-                $imageInfo = @getimagesize($file->getRealPath());
-                if ($imageInfo) {
-                    $width = $imageInfo[0] ?? null;
-                    $height = $imageInfo[1] ?? null;
-                }
-            } catch (\Throwable) {
-                // ignore
+            $imageInfo = @getimagesize($file->getRealPath());
+            if ($imageInfo !== false) {
+                $width = $imageInfo[0];
+                $height = $imageInfo[1];
             }
 
             $fileConfig = [
@@ -76,13 +59,15 @@ class MediatonicInput extends FileUpload
                 'size' => $file->getSize(),
                 'width' => $width,
                 'height' => $height,
-                'hash_name' => method_exists($file, 'hashName') ? $file->hashName() : null,
+                'hash_name' => $file->hashName(),
             ];
 
-            // Optionally record the upload in the igs_media table
-            $shouldRecord = $this->recordUploads ?? (bool) config('mediatonic.record_uploads', true);
             if ($shouldRecord) {
-                $this->recordUpload($filename, $fileConfig, $json['uuid'], is_array($json) ? $json : null);
+                $this->recordUpload(
+                    filename: $filename,
+                    fileConfig: $fileConfig,
+                    jsonResponse: $json,
+                );
             }
 
             return $filename;
@@ -90,76 +75,26 @@ class MediatonicInput extends FileUpload
     }
 
     /**
-     * Override API endpoint per field instance.
+     * @param  array<string, int|string|null>  $fileConfig
+     * @param  array<string, mixed>|null  $jsonResponse
      */
-    public function endpoint(?string $endpoint): static
-    {
-        $this->endpoint = $endpoint;
-
-        return $this;
-    }
-
-    /**
-     * Override the multipart file field name per field instance.
-     */
-    public function fileField(string $name): static
-    {
-        $this->fileField = $name;
-
-        return $this;
-    }
-
-    /**
-     * Override the response key used to extract the filename per field instance.
-     */
-    public function responseKey(?string $key): static
-    {
-        $this->responseKey = $key;
-
-        return $this;
-    }
-
-    /**
-     * Enable/disable recording uploads to the igs_media table for this field instance.
-     */
-    public function recordToMedia(bool $enabled = true): static
-    {
-        $this->recordUploads = $enabled;
-
-        return $this;
-    }
-
-    /**
-     * Insert a row into the igs_media table if model context is available.
-     */
-    protected function recordUpload(string $filename, array $fileConfig, string $uuid, ?array $jsonResponse = null): void
+    protected function recordUpload(string $filename, array $fileConfig, ?array $jsonResponse = null): void
     {
         $modelClass = $this->getModel();
         $modelId = $this->resolveCurrentRecordId();
+        $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
 
         if (! $modelClass || ! $modelId) {
             // No model context; skip recording.
             return;
         }
 
-        $presets = null;
-        if (is_array($jsonResponse)) {
-            if (array_key_exists('presets', $jsonResponse)) {
-                $presets = $jsonResponse['presets'];
-            } elseif (array_key_exists('preset', $jsonResponse)) {
-                $presets = $jsonResponse['preset'];
-            }
-        }
-
-        DB::table(get_mediatonic_table_name())->insert([
+        $model->create([
             'model_type' => $modelClass,
             'model_id' => $modelId,
-            'uuid' => $uuid,
+            'uuid' => $jsonResponse['uuid'],
             'filename' => $filename,
-            'presets' => $presets !== null ? json_encode($presets) : null,
             'config' => json_encode($fileConfig),
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
     }
 
@@ -189,7 +124,7 @@ class MediatonicInput extends FileUpload
         }
 
         // Try to get the dehydrated state if the model key is part of the form state
-        if (method_exists($livewire, 'form')) {
+        if (! empty($livewire->form) && method_exists($livewire->form, 'getState')) {
             try {
                 $state = $livewire->form->getState();
                 foreach (['id', $this->getStatePath().'.id'] as $key) {

@@ -2,8 +2,8 @@
 
 namespace Digitonic\Mediatonic\Filament\Models;
 
-
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Media extends Model
 {
@@ -30,7 +30,7 @@ class Media extends Model
     }
 
     /**
-     * Inverse morph relation to the owning model.
+     * @return MorphTo<Model, $this>
      */
     public function model(): MorphTo
     {

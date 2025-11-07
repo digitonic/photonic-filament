@@ -3,16 +3,13 @@
 namespace Digitonic\Mediatonic\Filament\Enums;
 
 use Filament\Support\Contracts\HasLabel;
-use Illuminate\Contracts\Support\Htmlable;
 
 enum PresetEnum: string implements HasLabel
 {
     case ORIGINAL = 'original';
 
-    public function getLabel(): string|Htmlable|null
+    public function getLabel(): string
     {
-        return match ($this) {
-            self::ORIGINAL => 'Original',
-        };
+        return 'Original';
     }
 }

@@ -4,8 +4,8 @@ namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
 use Filament\Actions\Action;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Group;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -48,9 +48,8 @@ class MediatonicImageField extends Group
                 // single file for this helper – users can still override by extending later if needed
                 ->multiple(false)
                 // Hide uploader if a record already has media via relation
-                ->hidden(fn (?Model $record): bool => (bool) ($record?->{$this->relationName} ?? null))
+                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
                 // Ensure it records to media table by default so relation can exist
-                ->recordToMedia(true)
                 ->columnSpan([
                     'sm' => 2,
                 ]),
@@ -58,9 +57,9 @@ class MediatonicImageField extends Group
             // 2) Preview placeholder - only visible when relation exists
             TextEntry::make('img_preview'.'_preview_'.Str::random(2))
                 ->label('Image Preview')
-                ->hidden(fn (?Model $record): bool => ! (bool) ($record?->{$this->relationName} ?? null))
+                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
                 ->state(function (?Model $record) {
-                    $media = $record?->{$this->relationName} ?? null;
+                    $media = $record->{$this->relationName} ?? null;
                     if (! $record || ! $media) {
                         return 'No image available';
                     }
@@ -70,12 +69,15 @@ class MediatonicImageField extends Group
                         return 'No image available';
                     }
 
-                    $html = view('mediatonic-filament::components.image', [
+                    /** @var view-string $viewName */
+                    $viewName = 'mediatonic-filament::components.image';
+
+                    $html = view($viewName, [
                         'filename' => $filename,
                         'preset' => $this->previewPreset,
                         'class' => $this->previewClasses,
                         'alt' => $filename,
-                        'media' => $media
+                        'media' => $media,
                     ])->render();
 
                     return new HtmlString($html);
@@ -89,7 +91,7 @@ class MediatonicImageField extends Group
                     ->label(__('Remove Image'))
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->hidden(fn (?Model $record): bool => ! (bool) ($record?->{$this->relationName} ?? null))
+                    ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
                     ->action(function (?Model $record, $livewire) {
                         if ($record && $record->{$this->relationName}) {
                             // Delete the related media record

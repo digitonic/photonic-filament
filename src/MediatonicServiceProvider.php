@@ -11,9 +11,10 @@ class MediatonicServiceProvider extends PackageServiceProvider
     {
         parent::boot(); // <--- ADD THIS LINE
         $this->publishes([
-            __DIR__ . '/../config/mediatonic.php' => config_path('mediatonic.php'),
+            __DIR__.'/../config/mediatonic.php' => config_path('mediatonic.php'),
         ]);
     }
+
     public function configurePackage(Package $package): void
     {
         $package
