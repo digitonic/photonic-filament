@@ -2,6 +2,7 @@
 
 namespace Digitonic\Mediatonic\Filament\Forms\Components;
 
+use Digitonic\Mediatonic\Filament\Enums\PresetEnum;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
@@ -21,9 +22,9 @@ class MediatonicImageField extends Group
     protected string $uploadFieldName = 'mediatonic_upload';
 
     /**
-     * CDN preset path segment used for preview URL (e.g. 'originals', 'featured').
+     * CDN preset path segment used for preview URL (e.g. 'original', 'featured').
      */
-    protected string $previewPreset = 'originals';
+    protected string $previewPreset = PresetEnum::ORIGINAL->value;
 
     /**
      * Whether to show the remove action.

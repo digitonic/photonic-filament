@@ -181,7 +181,7 @@ Non-original presets convert the basename to `.webp`.
 ## Helper Functions
 
 ```php
-mediatonic_asset(string $filename, string $preset = 'original'): ?string;
+mediatonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string;
 get_mediatonic_table_name(): string;
 ```
 

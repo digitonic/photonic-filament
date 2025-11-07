@@ -6,7 +6,7 @@ if (! function_exists('mediatonic_asset')) {
     /**
      * Parse and return a URL structure that should point to an uploaded asset.
      */
-    function mediatonic_asset(string $filename, string $preset = 'original'): ?string
+    function mediatonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string
     {
         if ($filename === '') {
             return null;
@@ -18,9 +18,10 @@ if (! function_exists('mediatonic_asset')) {
 
         if (strtolower($presetSegment) === PresetEnum::ORIGINAL->value) {
             return sprintf(
-                '%s/%s/original/%s',
+                '%s/%s/%s/original/%s',
                 $cdn,
                 $site,
+                $assetUuid,
                 ltrim($filename, '/')
             );
         }
@@ -29,9 +30,10 @@ if (! function_exists('mediatonic_asset')) {
         $webpFilename = $base.'.webp';
 
         return sprintf(
-            '%s/%s/presets/%s/%s',
+            '%s/%s/%s/presets/%s/%s',
             $cdn,
             $site,
+            $assetUuid,
             $presetSegment,
             $webpFilename
         );

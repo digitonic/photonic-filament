@@ -1,13 +1,17 @@
 @props([
     'filename' => null,
-    'preset' => 'original',
+    'preset' => PresetEnum::ORIGINAL->value,
     'alt' => null,
     'class' => 'object-cover w-auto',
     'media' => null,
 ])
 
 @php
-    $src = mediatonic_asset($filename, $preset)
+    $src = mediatonic_asset(
+            filename: $filename,
+            assetUuid: $media->asset_uuid,
+            preset: $preset
+        );
 
     $classes = $attributes->has('class') ? $attributes->get('class') : $class;
     $altText = $alt ?? $filename;
