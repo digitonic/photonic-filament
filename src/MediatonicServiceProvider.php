@@ -7,20 +7,13 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class MediatonicServiceProvider extends PackageServiceProvider
 {
-    public function boot(): void
-    {
-        parent::boot(); // <--- ADD THIS LINE
-        $this->publishes([
-            __DIR__.'/../config/mediatonic.php' => config_path('mediatonic.php'),
-        ]);
-    }
-
     public function configurePackage(Package $package): void
     {
         $package
             ->name('mediatonic-filament')
             ->hasConfigFile()
             ->discoversMigrations()
+            ->runsMigrations()
             ->hasViews();
     }
 }

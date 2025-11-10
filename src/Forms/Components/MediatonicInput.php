@@ -21,19 +21,30 @@ class MediatonicInput extends FileUpload
         // Intercept the save process to send the file to the Mediatonic API and
         // store the returned filename in the field state / database.
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
-            $endpoint = config('mediatonic.endpoint');
-            $responseKey = config('mediatonic.response_key', 'filename');
-            $shouldRecord = (bool) config('mediatonic.record_uploads', true);
+            $endpoint = config('mediatonic-filament.endpoint');
+            $responseKey = config('mediatonic-filament.response_key', 'filename');
+            $shouldRecord = (bool) config('mediatonic-filament.record_uploads', true);
 
             if (blank($endpoint)) {
-                throw new \RuntimeException('Endpoint is not configured. Set mediatonic.endpoint in your config.');
+                throw new \RuntimeException('Endpoint is not configured. Set mediatonic-filament.endpoint in your config.');
+            }
+
+            // Handle both local and S3 storage scenarios
+            $filePath = $file->getRealPath();
+            if (! file_exists($filePath)) {
+                // Livewire is using S3 or cloud storage, read from temporary URL
+                $fileStream = fopen($file->temporaryUrl(), 'r');
+            } else {
+                // Local storage
+                $fileStream = fopen($filePath, 'r');
             }
 
             // Correctly instantiate API connector
             $api = new API;
             $request = new CreateAsset(
                 siteId: null,
-                file: $file,
+                fileStream: $fileStream,
+                fileName: $file->getClientOriginalName()
             );
             $response = $api->send($request);
 
@@ -83,7 +94,7 @@ class MediatonicInput extends FileUpload
     {
         $modelClass = $this->getModel();
         $modelId = $this->resolveCurrentRecordId();
-        $mediaModelClass = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+        $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
 
         if (! $modelClass || ! $modelId) {
             // No model context; skip recording.

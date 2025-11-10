@@ -23,7 +23,8 @@ class CreateAsset extends Request implements HasBody
 
     public function __construct(
         protected ?string $siteId,
-        protected mixed $file
+        protected mixed $fileStream,
+        protected string $fileName,
     ) {}
 
     /**
@@ -39,11 +40,9 @@ class CreateAsset extends Request implements HasBody
      */
     public function defaultBody(): array
     {
-        $stream = fopen($this->file->getRealPath(), 'r');
-
         return [
-            new MultipartValue('site_uuid', (string) ($this->siteId ?? config('mediatonic.site_uuid'))),
-            new MultipartValue(config('mediatonic.file_field'), $stream, $this->file->getClientOriginalName()),
+            new MultipartValue('site_uuid', (string) ($this->siteId ?? config('mediatonic-filament.site_uuid'))),
+            new MultipartValue(config('mediatonic-filament.file_field'), $this->fileStream, $this->fileName),
         ];
     }
 }

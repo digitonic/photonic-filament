@@ -7,8 +7,8 @@ it('returns null when filename empty', function () {
 });
 
 it('builds original preset URL', function () {
-    config()->set('mediatonic.cdn_endpoint', 'https://cdn.example.com');
-    config()->set('mediatonic.site_uuid', 'site-123');
+    config()->set('mediatonic-filament.cdn_endpoint', 'https://cdn.example.com');
+    config()->set('mediatonic-filament.site_uuid', 'site-123');
     $assetUuid = Str::uuid()->toString();
 
     $url = mediatonic_asset('photo.jpg', $assetUuid);
@@ -16,8 +16,8 @@ it('builds original preset URL', function () {
 });
 
 it('builds preset URL with webp extension conversion', function () {
-    config()->set('mediatonic.cdn_endpoint', 'https://cdn.example.com');
-    config()->set('mediatonic.site_uuid', 'site-123');
+    config()->set('mediatonic-filament.cdn_endpoint', 'https://cdn.example.com');
+    config()->set('mediatonic-filament.site_uuid', 'site-123');
     $assetUuid = Str::uuid()->toString();
 
     $url = mediatonic_asset('photo.PNG', $assetUuid, 'featured');
@@ -25,8 +25,8 @@ it('builds preset URL with webp extension conversion', function () {
 });
 
 it('treats ORIGINAL case-insensitively', function () {
-    config()->set('mediatonic.cdn_endpoint', 'https://cdn.example.com');
-    config()->set('mediatonic.site_uuid', 'site-123');
+    config()->set('mediatonic-filament.cdn_endpoint', 'https://cdn.example.com');
+    config()->set('mediatonic-filament.site_uuid', 'site-123');
     $assetUuid = Str::uuid()->toString();
 
     $url1 = mediatonic_asset('photo.jpg', $assetUuid, 'ORIGINAL');
@@ -47,7 +47,7 @@ it('returns configured table name via helper', function () {
         }
     };
 
-    config()->set('mediatonic.media_model', $custom::class);
+    config()->set('mediatonic-filament.media_model', $custom::class);
 
     expect(get_mediatonic_table_name())->toBe('custom_media_table');
 });

@@ -12,8 +12,8 @@ if (! function_exists('mediatonic_asset')) {
             return null;
         }
 
-        $cdn = rtrim((string) config('mediatonic.cdn_endpoint'), '/');
-        $site = trim((string) config('mediatonic.site_uuid'), '/');
+        $cdn = rtrim((string) config('mediatonic-filament.cdn_endpoint'), '/');
+        $site = trim((string) config('mediatonic-filament.site_uuid'), '/');
         $presetSegment = trim($preset, '/');
 
         if (strtolower($presetSegment) === PresetEnum::ORIGINAL->value) {
@@ -43,7 +43,7 @@ if (! function_exists('mediatonic_asset')) {
 if (! function_exists('get_mediatonic_table_name')) {
     function get_mediatonic_table_name(): string
     {
-        $model = config('mediatonic.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+        $model = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
 
         return (new $model)->getTable();
     }

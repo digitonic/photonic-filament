@@ -25,9 +25,9 @@ class TestCase extends BaseTestCase
         ]);
 
         // Base config defaults for tests
-        $app['config']->set('mediatonic.endpoint', 'https://api.example.test');
-        $app['config']->set('mediatonic.api_key', 'test-token');
-        $app['config']->set('mediatonic.site_uuid', 'site-123');
-        $app['config']->set('mediatonic.cdn_endpoint', 'https://cdn.example.test');
+        $app['config']->set('mediatonic-filament.endpoint', 'https://api.example.test');
+        $app['config']->set('mediatonic-filament.api_key', 'test-token');
+        $app['config']->set('mediatonic-filament.site_uuid', 'site-123');
+        $app['config']->set('mediatonic-filament.cdn_endpoint', 'https://cdn.example.test');
     }
 }

@@ -1,11 +1,12 @@
 <?php
 
+use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
 use Saloon\Data\MultipartValue;
 
 it('builds multipart body with site uuid and file field', function () {
-    config()->set('mediatonic.site_uuid', 'site-xyz');
-    config()->set('mediatonic.file_field', 'file');
+    config()->set('mediatonic-filament.site_uuid', 'site-xyz');
+    config()->set('mediatonic-filament.file_field', 'file');
 
     // Mock a file-like object with required methods
     $file = new class
@@ -21,7 +22,24 @@ it('builds multipart body with site uuid and file field', function () {
         }
     };
 
-    $request = new CreateAsset(siteId: null, file: $file);
+    // Handle both local and S3 storage scenarios
+    $filePath = $file->getRealPath();
+    if (! file_exists($filePath)) {
+        // Livewire is using S3 or cloud storage, read from temporary URL
+        $fileStream = fopen($file->temporaryUrl(), 'r');
+    } else {
+        // Local storage
+        $fileStream = fopen($filePath, 'r');
+    }
+
+    // Correctly instantiate API connector
+    $api = new API;
+    $request = new CreateAsset(
+        siteId: null,
+        fileStream: $fileStream,
+        fileName: $file->getClientOriginalName()
+    );
+
     $body = $request->defaultBody();
 
     expect($body)->toBeArray()->and(count($body))->toBe(2);

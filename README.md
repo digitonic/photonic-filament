@@ -40,11 +40,11 @@ php artisan vendor:publish --tag=mediatonic-filament-views
 php artisan migrate
 ```
 
-This creates `config/mediatonic.php`, publishes the migration for the `mediatonic` table, and the Blade view component.
+This creates `config/mediatonic-filament.php`, publishes the migration for the `mediatonic` table, and the Blade view component.
 
 ## Configuration
 
-All options live in `config/mediatonic.php` and can be set via environment variables:
+All options live in `config/mediatonic-filament.php` and can be set via environment variables:
 
 | Key | Env | Default | Purpose                                                  |
 |-----|-----|---------|----------------------------------------------------------|

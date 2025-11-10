@@ -16,7 +16,7 @@ class API extends Connector
      */
     public function resolveBaseUrl(): string
     {
-        return config('mediatonic.endpoint');
+        return config('mediatonic-filament.endpoint');
     }
 
     /**
@@ -33,6 +33,6 @@ class API extends Connector
 
     protected function defaultAuth(): ?Authenticator
     {
-        return new TokenAuthenticator(config('mediatonic.api_key'));
+        return new TokenAuthenticator(config('mediatonic-filament.api_key'));
     }
 }
