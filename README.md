@@ -2,6 +2,10 @@
 
 A Filament 4 form component package for Laravel 12 that uploads image assets to a third‑party Mediatonic API, stores metadata in your database, and renders CDN image URLs. It does not persist the uploaded file locally.
 
+<p align="center">
+<img src="https://img.shields.io/github/actions/workflow/status/digitonic/mediatonic-filament/.github%2Fworkflows%2Ftests.yml?style=for-the-badge&logo=laravel&logoColor=white" alt="workflow build status">
+</p>
+
 ## Features
 
 - Uploads directly to a remote API (via Saloon) on form save.
@@ -19,9 +23,7 @@ A Filament 4 form component package for Laravel 12 that uploads image assets to 
 ## Requirements
 
 - PHP: 8.2+
-- Laravel: 12.x
 - Filament: 4.x
-- saloonphp/saloon: ^3.0
 
 ## Installation
 
@@ -44,44 +46,16 @@ This creates `config/mediatonic.php`, publishes the migration for the `mediatoni
 
 All options live in `config/mediatonic.php` and can be set via environment variables:
 
-| Key | Env | Default | Purpose |
-|-----|-----|---------|---------|
-| endpoint | MEDIATONIC_ENDPOINT | https://mediatonic.test/api/v1 | Base API URL used by the Saloon connector. |
-| cdn_endpoint | MEDIATONIC_CDN_ENDPOINT | https://minio.herd.test/mediatonic | Base CDN URL for image rendering. |
-| site_uuid | MEDIATONIC_SITE_UUID | (null) | Site identifier sent with each upload. |
-| api_key | MEDIATONIC_API_KEY | (null) | Bearer API token (added automatically). |
-| file_field | MEDIATONIC_FILE_FIELD | file | Multipart field name for the uploaded file. |
+| Key | Env | Default | Purpose                                                  |
+|-----|-----|---------|----------------------------------------------------------|
+| endpoint | MEDIATONIC_ENDPOINT | https://mediatonic.test/api/v1 | Base API URL used by the Saloon connector.               |
+| cdn_endpoint | MEDIATONIC_CDN_ENDPOINT | https://minio.herd.test/mediatonic | Base CDN URL for image rendering.                        |
+| site_uuid | MEDIATONIC_SITE_UUID | (null) | Site identifier sent with each upload.                   |
+| api_key | MEDIATONIC_API_KEY | (null) | Bearer API token (created within mediatonic).            |
+| file_field | MEDIATONIC_FILE_FIELD | file | Multipart field name for the uploaded file.              |
 | response_key | MEDIATONIC_RESPONSE_KEY | original_filename | JSON key inside `data` used to pull the stored filename. |
-| record_uploads | MEDIATONIC_RECORD_UPLOADS | true | Enable database recording of each uploaded asset. |
-| media_model | (class) | `Digitonic\Mediatonic\Filament\Models\Media::class` | Eloquent model used to persist uploads. |
-
-### API Expectations
-
-Upload requests are sent as:
-
-- Method: `POST`
-- Endpoint: `{endpoint}/assets`
-- Auth: Bearer token (`MEDIATONIC_API_KEY`)
-- Multipart fields:
-  - `site_uuid` (from `MEDIATONIC_SITE_UUID` or constructor)
-  - `{file_field}` (the file stream)
-
-Expected JSON response shape:
-
-```json
-{
-  "data": {
-    "original_filename": "example.jpg",
-    "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  }
-}
-```
-
-We extract `data[response_key]` for the filename. Adjust `response_key` if your API differs.
-
-## Media Table
-
-`Media` model overrides `getTable()` to return `'mediatonic'`. Override in a custom model if required.
+| record_uploads | MEDIATONIC_RECORD_UPLOADS | true | Enable database recording of each uploaded asset.        |
+| media_model | (class) | `Digitonic\Mediatonic\Filament\Models\Media::class` | Eloquent model used to persist uploads.                  |
 
 ## Trait: `UsesMediatonic`
 
@@ -102,8 +76,6 @@ Provides:
 - `$article->addMediatonicMedia($filename, $presetsArray)`
 - `$article->removeMediatonicMedia($mediaId)`
 
-If you need multiple media items, implement a custom `morphMany` relation and adapt the form component.
-
 ## Form Components
 
 ### 1. `MediatonicInput`
@@ -119,8 +91,8 @@ MediatonicInput::make('image_filename')
 
 Behavior:
 
-- Forces image mode; enables `multiple()` by default (you can override via standard FileUpload API methods).
-- Disables local preview (`previewable(false)`).
+- Forces image mode.
+- Disables local preview as we implement our own.
 - On save:
   - Sends file via Saloon to API.
   - Extracts filename from `data[response_key]`.
@@ -139,9 +111,8 @@ use Digitonic\Mediatonic\Filament\Forms\Components\MediatonicImageField;
 
 MediatonicImageField::make('featured_image')
     ->relation('mediatonicMedia')  // default relation from trait
-    ->preset('originals')          // preview preset segment
-    ->previewClasses('rounded-xl max-w-full h-auto')
-    ->deletable(true);
+    ->preset('original')          // preview preset segment
+    ->previewClasses('rounded-xl max-w-full h-auto');
 ```
 
 Flow:
@@ -149,11 +120,6 @@ Flow:
 1. If no related media exists, shows single-file `MediatonicInput`.
 2. After successful upload and DB record creation, hides uploader and renders preview.
 3. Provides "Remove Image" action to delete the related media row, refreshes form.
-
-Notes:
-
-- Internal uploader field is not dehydrated; relation storage is canonical.
-- Only supports one media row (morphOne). Extend for galleries.
 
 ### 3. Blade Image Component
 
@@ -166,17 +132,6 @@ Notes:
     loading="lazy"
 />
 ```
-
-Props:
-
-| Prop | Default | Description |
-|------|---------|-------------|
-| filename | — | Stored original filename |
-| preset | original | CDN preset; influences URL & webp conversion |
-| alt | filename | Alt text |
-| class | object-cover w-auto | CSS classes |
-
-Non-original presets convert the basename to `.webp`.
 
 ## Helper Functions
 
@@ -228,25 +183,6 @@ Blade display:
 - Change media model: Create a subclass overriding `getTable()` or adding attributes/casts, then set `media_model` in config.
 - Response parsing: Customize `MediatonicInput::setUp()` to add fallback logic or alternate payload handling.
 - Multiple assets: Swap trait + relation to `morphMany`; adjust composite field to handle collections.
-- Remote deletion: Add an API request in the remove action if the Mediatonic API supports deleting assets.
-
-## Troubleshooting
-
-| Symptom | Cause | Resolution |
-|---------|-------|------------|
-| `asset_uuid` null | API response missing `data.uuid` | Ensure API returns UUID; add guard in code if needed. |
-| Empty filename stored | `response_key` mismatch | Set `MEDIATONIC_RESPONSE_KEY` to correct JSON key. |
-| Broken preview URL | CDN or preset mismatch | Verify `cdn_endpoint`, `site_uuid`, preset, file exists. |
-| No row recorded | No model context / create form without ID yet | Save parent model first or disable recording until edit. |
-| Multiple uploads unexpected | `multiple()` is enabled by default | Call `->multiple(false)` if only one file desired. |
-
-## Roadmap Ideas
-
-- Fallback chain for filename extraction.
-- Optional WebP bypass / dynamic extension mapping.
-- Multi-image gallery component (`morphMany`).
-- Remote asset deletion & purge integration.
-- Automatic error surface for API validation messages.
 
 # License
 

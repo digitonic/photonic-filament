@@ -20,7 +20,7 @@ class MediatonicServiceProvider extends PackageServiceProvider
         $package
             ->name('mediatonic-filament')
             ->hasConfigFile()
-            ->hasMigration('create_mediatonic_table')
+            ->discoversMigrations()
             ->hasViews();
     }
 }
