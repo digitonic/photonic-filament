@@ -135,6 +135,8 @@ Flow:
 
 ## Helper Functions
 
+### Basic URL Building
+
 ```php
 mediatonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string;
 get_mediatonic_table_name(): string;
@@ -142,10 +144,46 @@ get_mediatonic_table_name(): string;
 
 `mediatonic_asset` builds:
 
-- Original: `{cdn_endpoint}/{site_uuid}/original/{filename}`
-- Preset: `{cdn_endpoint}/{site_uuid}/presets/{preset}/{base}.webp`
+- Original: `{cdn_endpoint}/{site_uuid}/{assetUuid}/original/{filename}`
+- Preset: `{cdn_endpoint}/{site_uuid}/{assetUuid}/presets/{preset}/{base}.webp`
 
 Returns `null` if the filename is empty.
+
+### ID-Based Functions (with Caching)
+
+For optimal performance when working with media IDs (ID mode), use these cached helper functions:
+
+```php
+// Get CDN URL by media ID (cached for 1 hour by default)
+mediatonic_asset_by_id(int $mediaId, string $preset = 'original', int $cacheTtl = 3600): ?string;
+
+// Get full Media model by ID (cached for 1 hour by default)
+mediatonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?Media;
+
+// Clear cache for a specific media ID
+forget_mediatonic_cache(int $mediaId): void;
+```
+
+**Example Usage:**
+
+```php
+// In a loop - only queries database once per media ID/preset
+@foreach($contentBlocks as $block)
+    <img src="{{ mediatonic_asset_by_id($block['media_id'], 'thumbnail') }}">
+@endforeach
+
+// Access full media with metadata
+$media = mediatonic_media_by_id(42);
+echo $media->alt; // Alt text
+echo $media->title; // Title
+echo $media->getUrl('large'); // CDN URL
+```
+
+**Performance Benefits:**
+- Automatic caching reduces database queries
+- Cache is automatically cleared when media is updated/deleted
+- Ideal for Filament Builder blocks and repeated access
+
 
 ## Example End-to-End
 

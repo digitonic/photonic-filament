@@ -47,4 +47,22 @@ class Media extends Model
             preset: $preset
         );
     }
+
+    /**
+     * Boot the model and register event listeners.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Clear cache when media is updated
+        static::updated(function (Media $media) {
+            forget_mediatonic_cache($media->id);
+        });
+
+        // Clear cache when media is deleted
+        static::deleted(function (Media $media) {
+            forget_mediatonic_cache($media->id);
+        });
+    }
 }
