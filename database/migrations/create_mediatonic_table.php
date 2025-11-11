@@ -11,9 +11,9 @@ return new class extends Migration
         Schema::create(get_mediatonic_table_name(), function (Blueprint $table) {
             $table->id();
             $table->string('asset_uuid', 36)->unique()->index(); // This is the UUID assigned by Mediatonic
-            // Polymorphic relation to the owning model
-            $table->string('model_type');
-            $table->unsignedBigInteger('model_id');
+            // Polymorphic relation to the owning model (nullable for standalone media records)
+            $table->string('model_type')->nullable();
+            $table->unsignedBigInteger('model_id')->nullable();
             $table->string('filename'); // Original filename stored in Mediatonic
             $table->string('alt')->nullable(); // Alt text for the image
             $table->string('title')->nullable(); // Title for the image

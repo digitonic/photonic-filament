@@ -9,6 +9,12 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class MediatonicInput extends FileUpload
 {
+    /**
+     * Whether to return the media ID instead of filename.
+     * When true, the field will be hydrated with the media ID for storage.
+     */
+    protected bool $returnMediaId = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -20,7 +26,7 @@ class MediatonicInput extends FileUpload
 
         // Intercept the save process to send the file to the Mediatonic API and
         // store the returned filename in the field state / database.
-        $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string {
+        $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string|int {
             $endpoint = config('mediatonic-filament.endpoint');
             $responseKey = config('mediatonic-filament.response_key', 'filename');
             $shouldRecord = (bool) config('mediatonic-filament.record_uploads', true);
@@ -88,8 +94,9 @@ class MediatonicInput extends FileUpload
                 'hash_name' => $file->hashName(),
             ];
 
+            $mediaId = null;
             if ($shouldRecord) {
-                $this->recordUpload(
+                $mediaId = $this->recordUpload(
                     filename: $filename ?? '',
                     fileConfig: $fileConfig,
                     jsonResponse: $json,
@@ -100,13 +107,30 @@ class MediatonicInput extends FileUpload
                 );
             }
 
+            // Return media ID if configured, otherwise return filename
+            if ($this->returnMediaId && $mediaId !== null) {
+                return (string) $mediaId;
+            }
+
             return $filename ?? '';
         });
     }
 
     /**
+     * Configure the component to return the media ID instead of filename.
+     * Useful for storing a direct reference to the media record.
+     */
+    public function returnId(bool $return = true): static
+    {
+        $this->returnMediaId = $return;
+
+        return $this;
+    }
+
+    /**
      * @param  array<string, int|string|null>  $fileConfig
      * @param  array<string, mixed>|null  $jsonResponse
+     * @return int|null The ID of the created media record, or null if not created
      */
     protected function recordUpload(
         string $filename,
@@ -116,20 +140,39 @@ class MediatonicInput extends FileUpload
         ?string $title = null,
         ?string $description = null,
         ?string $caption = null
-    ): void {
-        $modelClass = $this->getModel();
-        $modelId = $this->resolveCurrentRecordId();
+    ): ?int {
         $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
-
-        if (! $modelClass || ! $modelId) {
-            // No model context; skip recording.
-            return;
-        }
-
+        
         // Store asset_uuid (matches migration) if present in response
         $assetUuid = $jsonResponse['uuid'] ?? null;
 
-        $mediaModelClass::create([
+        // When returnMediaId is true, we create a standalone media record without polymorphic relation
+        if ($this->returnMediaId) {
+            $media = $mediaModelClass::create([
+                'model_type' => null,
+                'model_id' => null,
+                'asset_uuid' => $assetUuid,
+                'filename' => $filename,
+                'alt' => $alt,
+                'title' => $title,
+                'description' => $description,
+                'caption' => $caption,
+                'config' => $fileConfig,
+            ]);
+
+            return $media->id;
+        }
+
+        // Original behavior: create with polymorphic relation
+        $modelClass = $this->getModel();
+        $modelId = $this->resolveCurrentRecordId();
+
+        if (! $modelClass || ! $modelId) {
+            // No model context; skip recording.
+            return null;
+        }
+
+        $media = $mediaModelClass::create([
             'model_type' => $modelClass,
             'model_id' => $modelId,
             'asset_uuid' => $assetUuid,
@@ -140,6 +183,8 @@ class MediatonicInput extends FileUpload
             'caption' => $caption,
             'config' => $fileConfig,
         ]);
+
+        return $media->id;
     }
 
     /**

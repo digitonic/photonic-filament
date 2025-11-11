@@ -35,4 +35,16 @@ class Media extends Model
     {
         return $this->morphTo(name: 'model', type: 'model_type', id: 'model_id');
     }
+
+    /**
+     * Get the full CDN URL for this media asset.
+     */
+    public function getUrl(string $preset = 'original'): ?string
+    {
+        return mediatonic_asset(
+            filename: $this->filename,
+            assetUuid: $this->asset_uuid,
+            preset: $preset
+        );
+    }
 }

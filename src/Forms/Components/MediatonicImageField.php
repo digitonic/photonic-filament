@@ -40,24 +40,64 @@ class MediatonicImageField extends Group
      */
     protected string $previewClasses = 'rounded-xl max-w-full h-auto';
 
+    /**
+     * Whether to return the media ID instead of using polymorphic relationship.
+     * When true, the field will store the media ID in the specified column.
+     */
+    protected bool $returnMediaId = false;
+
+    /**
+     * The field name to store/retrieve the media ID when in ID mode.
+     */
+    protected ?string $mediaIdField = null;
+
+    /**
+     * Reference to the MediatonicInput component for method forwarding.
+     */
+    protected ?MediatonicInput $inputComponent = null;
+
+    /**
+     * Callbacks to apply to the input component after it's created.
+     * This stores method calls made before setUp() is called.
+     */
+    protected array $inputCallbacks = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
         // Build inner schema during setup so it can react to configured properties.
-        $this->schema([
+        $this->schema($this->returnMediaId ? $this->buildIdModeSchema() : $this->buildRelationModeSchema());
+    }
+
+    /**
+     * Build schema for relationship mode (original behavior).
+     */
+    protected function buildRelationModeSchema(): array
+    {
+        // Create the input component and store reference
+        $this->inputComponent = MediatonicInput::make($this->uploadFieldName)
+            ->label('Upload Your Media')
+            ->helperText('Media will be uploaded to MediaTonic')
+            // Avoid saving uploader value to model
+            ->dehydrated(false)
+            // single file for this helper – users can still override by extending later if needed
+            ->multiple(false)
+            // Hide uploader if a record already has media via relation
+            ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
+            // Ensure it records to media table by default so relation can exist
+            ->columnSpan([
+                'sm' => 2,
+            ]);
+
+        // Apply any callbacks that were queued before setUp
+        foreach ($this->inputCallbacks as $callback) {
+            $callback($this->inputComponent);
+        }
+
+        return [
             // 1) Uploader - only visible when no related media exists.
-            MediatonicInput::make($this->uploadFieldName)
-                // Avoid saving uploader value to model
-                ->dehydrated(false)
-                // single file for this helper – users can still override by extending later if needed
-                ->multiple(false)
-                // Hide uploader if a record already has media via relation
-                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
-                // Ensure it records to media table by default so relation can exist
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
+            $this->inputComponent,
 
             // Metadata fields for new uploads
             TextInput::make('mediatonic_alt')
@@ -192,7 +232,210 @@ class MediatonicImageField extends Group
                     }),
             ])->columnSpanFull()
                 ->visible($this->showRemoveAction),
-        ]);
+        ];
+    }
+
+    /**
+     * Build schema for ID mode (stores media ID directly).
+     */
+    protected function buildIdModeSchema(): array
+    {
+        $mediaIdField = $this->mediaIdField ?? $this->getStatePath();
+
+        // Create the input component and store reference
+        $this->inputComponent = MediatonicInput::make($this->uploadFieldName)
+            ->returnId()
+            ->dehydrated(false)
+            ->multiple(false)
+            ->hidden(fn ($get) => filled($get($mediaIdField)))
+            ->afterStateUpdated(function ($state, $set) use ($mediaIdField) {
+                // When upload completes, store the returned ID
+                if ($state) {
+                    $set($mediaIdField, $state);
+                }
+            })
+            ->columnSpan(['sm' => 2]);
+
+        // Apply any callbacks that were queued before setUp
+        foreach ($this->inputCallbacks as $callback) {
+            $callback($this->inputComponent);
+        }
+
+        return [
+            // Hidden field to store the media ID
+            TextInput::make($mediaIdField)
+                ->label('Media')
+                ->hidden()
+                ->dehydrated(),
+
+            // Uploader - visible when no media ID exists
+            $this->inputComponent,
+
+            // Metadata fields for new uploads
+            TextInput::make('mediatonic_alt')
+                ->label('Alt Text')
+                ->maxLength(255)
+                ->helperText('Alternative text for the image (for accessibility)')
+                ->hidden(fn ($get) => filled($get($mediaIdField)))
+                ->dehydrated(false)
+                ->columnSpan(['sm' => 2]),
+
+            TextInput::make('mediatonic_title')
+                ->label('Title')
+                ->maxLength(255)
+                ->helperText('Title of the image')
+                ->hidden(fn ($get) => filled($get($mediaIdField)))
+                ->dehydrated(false)
+                ->columnSpan(['sm' => 2]),
+
+            Textarea::make('mediatonic_description')
+                ->label('Description')
+                ->rows(3)
+                ->helperText('Detailed description of the image')
+                ->hidden(fn ($get) => filled($get($mediaIdField)))
+                ->dehydrated(false)
+                ->columnSpan(['sm' => 2]),
+
+            Textarea::make('mediatonic_caption')
+                ->label('Caption')
+                ->rows(2)
+                ->helperText('Caption to display with the image')
+                ->hidden(fn ($get) => filled($get($mediaIdField)))
+                ->dehydrated(false)
+                ->columnSpan(['sm' => 2]),
+
+            // Preview - visible when media ID exists
+            TextEntry::make($mediaIdField.'_preview')
+                ->label('Image Preview')
+                ->hidden(fn ($get) => blank($get($mediaIdField)))
+                ->state(function ($get) use ($mediaIdField) {
+                    $mediaId = $get($mediaIdField);
+                    if (blank($mediaId)) {
+                        return 'No image available';
+                    }
+
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $media = $mediaModelClass::find($mediaId);
+
+                    if (! $media) {
+                        return 'Media not found';
+                    }
+
+                    /** @var view-string $viewName */
+                    $viewName = 'mediatonic-filament::components.image';
+
+                    $html = view($viewName, [
+                        'filename' => $media->filename,
+                        'preset' => $this->previewPreset,
+                        'class' => $this->previewClasses,
+                        'alt' => $media->alt ?? $media->filename,
+                        'media' => $media,
+                    ])->render();
+
+                    return new HtmlString($html);
+                })
+                ->extraAttributes(['class' => 'prose'])
+                ->columnSpanFull(),
+
+            // Metadata display for existing media
+            TextEntry::make($mediaIdField.'_alt')
+                ->label('Alt Text')
+                ->hidden(fn ($get) => blank($get($mediaIdField)))
+                ->state(function ($get) use ($mediaIdField) {
+                    $mediaId = $get($mediaIdField);
+                    if (blank($mediaId)) {
+                        return null;
+                    }
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $media = $mediaModelClass::find($mediaId);
+                    return $media->alt ?? null;
+                })
+                ->columnSpan(['sm' => 2]),
+
+            TextEntry::make($mediaIdField.'_title')
+                ->label('Title')
+                ->hidden(fn ($get) => blank($get($mediaIdField)))
+                ->state(function ($get) use ($mediaIdField) {
+                    $mediaId = $get($mediaIdField);
+                    if (blank($mediaId)) {
+                        return null;
+                    }
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $media = $mediaModelClass::find($mediaId);
+                    return $media->title ?? null;
+                })
+                ->columnSpan(['sm' => 2]),
+
+            TextEntry::make($mediaIdField.'_description')
+                ->label('Description')
+                ->hidden(fn ($get) => blank($get($mediaIdField)))
+                ->state(function ($get) use ($mediaIdField) {
+                    $mediaId = $get($mediaIdField);
+                    if (blank($mediaId)) {
+                        return null;
+                    }
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $media = $mediaModelClass::find($mediaId);
+                    return $media->description ?? null;
+                })
+                ->columnSpan(['sm' => 2]),
+
+            TextEntry::make($mediaIdField.'_caption')
+                ->label('Caption')
+                ->hidden(fn ($get) => blank($get($mediaIdField)))
+                ->state(function ($get) use ($mediaIdField) {
+                    $mediaId = $get($mediaIdField);
+                    if (blank($mediaId)) {
+                        return null;
+                    }
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $media = $mediaModelClass::find($mediaId);
+                    return $media->caption ?? null;
+                })
+                ->columnSpan(['sm' => 2]),
+
+            // Remove action
+            Actions::make([
+                Action::make('removeMediatonicImage')
+                    ->label(__('Remove Image'))
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->hidden(fn ($get) => blank($get($mediaIdField)))
+                    ->action(function ($get, $set, $livewire) use ($mediaIdField) {
+                        $mediaId = $get($mediaIdField);
+                        if ($mediaId) {
+                            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                            $media = $mediaModelClass::find($mediaId);
+
+                            if ($media) {
+                                // Send the API call to remove the asset
+                                $api = new API;
+                                $request = new DeleteAsset($media->asset_uuid);
+                                $response = $api->send($request);
+
+                                if ($response->status() === 200) {
+                                    $media->delete();
+                                    $set($mediaIdField, null);
+                                    $livewire->dispatch('$refresh');
+                                }
+                            }
+                        }
+                    }),
+            ])->columnSpanFull()
+                ->visible($this->showRemoveAction),
+        ];
+    }
+
+    /**
+     * Configure the field to return and store the media ID.
+     * Useful for Filament Builder blocks or when you need a direct reference.
+     */
+    public function returnId(bool $return = true, ?string $fieldName = null): static
+    {
+        $this->returnMediaId = $return;
+        $this->mediaIdField = $fieldName;
+
+        return $this->refreshSchema();
     }
 
     /**
@@ -246,6 +489,59 @@ class MediatonicImageField extends Group
         $this->schema([]);
         $this->setUp();
 
+        return $this;
+    }
+
+    /**
+     * Forward method calls to the underlying MediatonicInput component.
+     * 
+     * This magic method allows any standard Filament form component method to be called
+     * on MediatonicImageField, and it will be automatically forwarded to the internal
+     * MediatonicInput upload component. This includes methods like:
+     * 
+     * - ->visible() / ->hidden()
+     * - ->required() / ->requiredIf() / ->requiredWith()
+     * - ->disabled() / ->readonly()
+     * - ->default() / ->placeholder()
+     * - ->helperText() / ->hint() / ->hintIcon()
+     * - And any other Filament form component method
+     * 
+     * Example:
+     *   MediatonicImageField::make('image')
+     *       ->required()
+     *       ->visible(fn($get) => $get('needs_image'))
+     *       ->helperText('Upload a high-quality image');
+     * 
+     * The method calls are either applied immediately if the component is set up,
+     * or queued to be applied during the setUp() phase if called before initialization.
+     */
+    public function __call(string $method, array $parameters): mixed
+    {
+        // List of methods that should not be forwarded (handled by this class or parent)
+        $reservedMethods = [
+            'schema', 'columns', 'columnSpan', 'columnSpanFull',
+            'returnId', 'relation', 'preset', 'previewClasses', 'deletable',
+        ];
+
+        // If it's a reserved method or the component is already set up, delegate to parent
+        if (in_array($method, $reservedMethods, true)) {
+            return parent::__call($method, $parameters);
+        }
+
+        // If the input component exists, call the method on it directly
+        if ($this->inputComponent !== null) {
+            $result = $this->inputComponent->{$method}(...$parameters);
+            
+            // If the method returns the input component (for chaining), return $this instead
+            return $result === $this->inputComponent ? $this : $result;
+        }
+
+        // If setUp hasn't been called yet, queue the callback for later
+        $this->inputCallbacks[] = function ($component) use ($method, $parameters) {
+            $component->{$method}(...$parameters);
+        };
+
+        // Return $this for method chaining
         return $this;
     }
 }
