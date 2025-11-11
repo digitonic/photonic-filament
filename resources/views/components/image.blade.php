@@ -16,7 +16,8 @@
         );
 
     $classes = $attributes->has('class') ? $attributes->get('class') : $class;
-    $altText = $alt ?? $filename;
+    // Prioritize media.alt over passed alt over filename
+    $altText = $media->alt ?? $alt ?? $filename;
 @endphp
 
 <img src="{{ $src }}" alt="{{ $altText }}" {{ $attributes->except('class') }} class="{{ $classes }}" />

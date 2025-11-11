@@ -17,11 +17,21 @@ trait UsesMediatonic
     /**
      * Convenience helper to attach a new media row to this model.
      */
-    public function addMediatonicMedia(string $filename, ?array $presets = null): Media
-    {
+    public function addMediatonicMedia(
+        string $filename,
+        ?array $presets = null,
+        ?string $alt = null,
+        ?string $title = null,
+        ?string $description = null,
+        ?string $caption = null
+    ): Media {
         return $this->mediatonicMedia()->create([
             'filename' => $filename,
             'presets' => $presets,
+            'alt' => $alt,
+            'title' => $title,
+            'description' => $description,
+            'caption' => $caption,
         ]);
     }
 

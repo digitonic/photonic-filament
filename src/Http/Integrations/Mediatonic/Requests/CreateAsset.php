@@ -25,6 +25,10 @@ class CreateAsset extends Request implements HasBody
         protected ?string $siteId,
         protected mixed $fileStream,
         protected string $fileName,
+        protected ?string $alt = null,
+        protected ?string $title = null,
+        protected ?string $description = null,
+        protected ?string $caption = null,
     ) {}
 
     /**
@@ -40,9 +44,28 @@ class CreateAsset extends Request implements HasBody
      */
     public function defaultBody(): array
     {
-        return [
+        $body = [
             new MultipartValue('site_uuid', (string) ($this->siteId ?? config('mediatonic-filament.site_uuid'))),
             new MultipartValue(config('mediatonic-filament.file_field'), $this->fileStream, $this->fileName),
         ];
+
+        // Add optional fields if they are provided
+        if ($this->alt !== null) {
+            $body[] = new MultipartValue('alt', $this->alt);
+        }
+
+        if ($this->title !== null) {
+            $body[] = new MultipartValue('title', $this->title);
+        }
+
+        if ($this->description !== null) {
+            $body[] = new MultipartValue('description', $this->description);
+        }
+
+        if ($this->caption !== null) {
+            $body[] = new MultipartValue('caption', $this->caption);
+        }
+
+        return $body;
     }
 }

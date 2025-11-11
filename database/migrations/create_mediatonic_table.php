@@ -15,6 +15,10 @@ return new class extends Migration
             $table->string('model_type');
             $table->unsignedBigInteger('model_id');
             $table->string('filename'); // Original filename stored in Mediatonic
+            $table->string('alt')->nullable(); // Alt text for the image
+            $table->string('title')->nullable(); // Title for the image
+            $table->text('description')->nullable(); // Description for the image
+            $table->text('caption')->nullable(); // Caption for the image
             $table->json('config')->nullable(); // meta information from Mediatonic about the asset
             $table->timestamps();
 

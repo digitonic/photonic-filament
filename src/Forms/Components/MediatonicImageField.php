@@ -6,6 +6,8 @@ use Digitonic\Mediatonic\Filament\Enums\PresetEnum;
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
 use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\DeleteAsset;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Group;
@@ -57,6 +59,47 @@ class MediatonicImageField extends Group
                     'sm' => 2,
                 ]),
 
+            // Metadata fields for new uploads
+            TextInput::make('mediatonic_alt')
+                ->label('Alt Text')
+                ->maxLength(255)
+                ->helperText('Alternative text for the image (for accessibility)')
+                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
+                ->dehydrated(false)
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            TextInput::make('mediatonic_title')
+                ->label('Title')
+                ->maxLength(255)
+                ->helperText('Title of the image')
+                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
+                ->dehydrated(false)
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            Textarea::make('mediatonic_description')
+                ->label('Description')
+                ->rows(3)
+                ->helperText('Detailed description of the image')
+                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
+                ->dehydrated(false)
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            Textarea::make('mediatonic_caption')
+                ->label('Caption')
+                ->rows(2)
+                ->helperText('Caption to display with the image')
+                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
+                ->dehydrated(false)
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
             // 2) Preview placeholder - only visible when relation exists
             TextEntry::make('img_preview'.'_preview_'.Str::random(2))
                 ->label('Image Preview')
@@ -79,7 +122,7 @@ class MediatonicImageField extends Group
                         'filename' => $filename,
                         'preset' => $this->previewPreset,
                         'class' => $this->previewClasses,
-                        'alt' => $filename,
+                        'alt' => $media->alt ?? $filename,
                         'media' => $media,
                     ])->render();
 
@@ -87,6 +130,35 @@ class MediatonicImageField extends Group
                 })
                 ->extraAttributes(['class' => 'prose'])
                 ->columnSpanFull(),
+
+            // Metadata fields for existing uploads (read-only display)
+            TextEntry::make($this->relationName.'.alt')
+                ->label('Alt Text')
+                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            TextEntry::make($this->relationName.'.title')
+                ->label('Title')
+                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            TextEntry::make($this->relationName.'.description')
+                ->label('Description')
+                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
+
+            TextEntry::make($this->relationName.'.caption')
+                ->label('Caption')
+                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
+                ->columnSpan([
+                    'sm' => 2,
+                ]),
 
             // 3) Remove / replace action
             Actions::make([

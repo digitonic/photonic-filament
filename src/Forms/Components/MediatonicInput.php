@@ -41,10 +41,24 @@ class MediatonicInput extends FileUpload
 
             // Correctly instantiate API connector
             $api = new API;
+            
+            // Get metadata from the form state if available
+            $livewire = $this->getLivewire();
+            $state = method_exists($livewire, 'getState') ? $livewire->getState() : [];
+            
+            $alt = $state['mediatonic_alt'] ?? null;
+            $title = $state['mediatonic_title'] ?? null;
+            $description = $state['mediatonic_description'] ?? null;
+            $caption = $state['mediatonic_caption'] ?? null;
+            
             $request = new CreateAsset(
                 siteId: null,
                 fileStream: $fileStream,
-                fileName: $file->getClientOriginalName()
+                fileName: $file->getClientOriginalName(),
+                alt: $alt,
+                title: $title,
+                description: $description,
+                caption: $caption
             );
             $response = $api->send($request);
 
@@ -79,6 +93,10 @@ class MediatonicInput extends FileUpload
                     filename: $filename ?? '',
                     fileConfig: $fileConfig,
                     jsonResponse: $json,
+                    alt: $alt,
+                    title: $title,
+                    description: $description,
+                    caption: $caption,
                 );
             }
 
@@ -90,8 +108,15 @@ class MediatonicInput extends FileUpload
      * @param  array<string, int|string|null>  $fileConfig
      * @param  array<string, mixed>|null  $jsonResponse
      */
-    protected function recordUpload(string $filename, array $fileConfig, ?array $jsonResponse = null): void
-    {
+    protected function recordUpload(
+        string $filename,
+        array $fileConfig,
+        ?array $jsonResponse = null,
+        ?string $alt = null,
+        ?string $title = null,
+        ?string $description = null,
+        ?string $caption = null
+    ): void {
         $modelClass = $this->getModel();
         $modelId = $this->resolveCurrentRecordId();
         $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
@@ -109,6 +134,10 @@ class MediatonicInput extends FileUpload
             'model_id' => $modelId,
             'asset_uuid' => $assetUuid,
             'filename' => $filename,
+            'alt' => $alt,
+            'title' => $title,
+            'description' => $description,
+            'caption' => $caption,
             'config' => $fileConfig,
         ]);
     }
