@@ -12,8 +12,8 @@ A Filament 4 form component package for Laravel 12 that uploads image assets to 
 - Extracts the returned filename (configurable response key) from JSON.
 - Optionally records each upload to a dedicated `mediatonic` table.
 - Provides:
-  - `MediatonicInput` – raw upload field (extends Filament's `FileUpload`).
-  - `MediatonicImageField` – composite helper (upload + preview + delete).
+  - `MediaTonicInput` – raw upload field (extends Filament's `FileUpload`).
+  - `MediaTonicImageField` – composite helper (upload + preview + delete).
   - Blade component `<x-mediatonic-filament::image>` for rendering CDN URLs.
 - Helper functions:
   - `mediatonic_asset($filename, $preset = 'original')` URL builder.
@@ -56,16 +56,16 @@ All options live in `config/mediatonic-filament.php` and can be set via environm
 | response_key | MEDIATONIC_RESPONSE_KEY | original_filename | JSON key inside `data` used to pull the stored filename. |
 | media_model | (class) | `Digitonic\Mediatonic\Filament\Models\Media::class` | Eloquent model used to persist uploads.                  |
 
-## Trait: `UsesMediatonic`
+## Trait: `UsesMediaTonic`
 
 Add to any model needing a single associated media record:
 
 ```php
-use Digitonic\Mediatonic\Filament\Concerns\UsesMediatonic;
+use Digitonic\Mediatonic\Filament\Concerns\UsesMediaTonic;
 
 class Article extends Model
 {
-    use UsesMediatonic;
+    use UsesMediaTonic;
 }
 ```
 
@@ -84,7 +84,7 @@ Direct upload field:
 ```php
 use Digitonic\Mediatonic\Filament\Forms\Components\MediatonicInput;
 
-MediatonicInput::make('image_filename')
+MediaTonicInput::make('image_filename')
     ->label('Image');
 ```
 

@@ -1,6 +1,6 @@
 <?php
 
-use Digitonic\Mediatonic\Filament\Enums\PresetEnum;
+use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
 
 if (! function_exists('mediatonic_asset')) {
     /**
@@ -55,7 +55,7 @@ if (! function_exists('mediatonic_asset_by_id')) {
         $cacheKey = "mediatonic_asset_{$mediaId}_{$preset}";
 
         return cache()->remember($cacheKey, $cacheTtl, function () use ($mediaId, $preset) {
-            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
             $media = $mediaModelClass::find($mediaId);
 
             if (! $media) {
@@ -78,14 +78,14 @@ if (! function_exists('mediatonic_media_by_id')) {
      *
      * @param  int  $mediaId  The ID of the media record
      * @param  int  $cacheTtl  Cache duration in seconds (default: 3600 = 1 hour)
-     * @return \Digitonic\Mediatonic\Filament\Models\Media|null
      */
-    function mediatonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?\Digitonic\Mediatonic\Filament\Models\Media
+    function mediatonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?\Digitonic\MediaTonic\Filament\Models\Media
     {
         $cacheKey = "mediatonic_media_{$mediaId}";
 
         return cache()->remember($cacheKey, $cacheTtl, function () use ($mediaId) {
-            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+
             return $mediaModelClass::find($mediaId);
         });
     }
@@ -97,7 +97,6 @@ if (! function_exists('forget_mediatonic_cache')) {
      * Call this when updating or deleting media records.
      *
      * @param  int  $mediaId  The ID of the media record
-     * @return void
      */
     function forget_mediatonic_cache(int $mediaId): void
     {
@@ -116,7 +115,7 @@ if (! function_exists('forget_mediatonic_cache')) {
 if (! function_exists('get_mediatonic_table_name')) {
     function get_mediatonic_table_name(): string
     {
-        $model = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+        $model = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
 
         return (new $model)->getTable();
     }

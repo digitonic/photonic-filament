@@ -27,21 +27,21 @@
   },
   "autoload": {
     "psr-4": {
-      "Digitonic\\Mediatonic\\Filament\\": "src"
+      "Digitonic\\MediaTonic\\Filament\\": "src"
     },
     "files": [
-      "src/Helpers/MediatonicHelper.php"
+      "src/Helpers/MediaTonicHelper.php"
     ]
   },
   "autoload-dev": {
     "psr-4": {
-      "Digitonic\\Mediatonic\\Filament\\Tests\\": "tests"
+      "Digitonic\\MediaTonic\\Filament\\Tests\\": "tests"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Digitonic\\Mediatonic\\Filament\\MediatonicServiceProvider"
+        "Digitonic\\MediaTonic\\Filament\\MediaTonicServiceProvider"
       ]
     }
   },

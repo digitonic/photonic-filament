@@ -1,13 +1,13 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Forms\Components;
+namespace Digitonic\MediaTonic\Filament\Forms\Components;
 
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API; // ensure correct class import
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
 use Filament\Forms\Components\FileUpload;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class MediatonicInput extends FileUpload
+class MediaTonicInput extends FileUpload
 {
     /**
      * Whether to return the media ID instead of filename.
@@ -46,16 +46,16 @@ class MediatonicInput extends FileUpload
 
             // Correctly instantiate API connector
             $api = new API;
-            
+
             // Get metadata from the form state if available
             $livewire = $this->getLivewire();
             $state = method_exists($livewire, 'getState') ? $livewire->getState() : [];
-            
+
             $alt = $state['mediatonic_alt'] ?? null;
             $title = $state['mediatonic_title'] ?? null;
             $description = $state['mediatonic_description'] ?? null;
             $caption = $state['mediatonic_caption'] ?? null;
-            
+
             $request = new CreateAsset(
                 siteId: null,
                 fileStream: $fileStream,
@@ -137,8 +137,8 @@ class MediatonicInput extends FileUpload
         ?string $description = null,
         ?string $caption = null
     ): ?int {
-        $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
-        
+        $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+
         // Store asset_uuid (matches migration) if present in response
         $assetUuid = $jsonResponse['uuid'] ?? null;
 

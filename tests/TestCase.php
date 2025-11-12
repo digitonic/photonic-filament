@@ -1,8 +1,8 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Tests;
+namespace Digitonic\MediaTonic\Filament\Tests;
 
-use Digitonic\Mediatonic\Filament\MediatonicServiceProvider;
+use Digitonic\MediaTonic\Filament\MediaTonicServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
@@ -10,7 +10,7 @@ class TestCase extends BaseTestCase
     protected function getPackageProviders($app)
     {
         return [
-            MediatonicServiceProvider::class,
+            MediaTonicServiceProvider::class,
         ];
     }
 

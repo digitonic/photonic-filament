@@ -1,15 +1,15 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Concerns;
+namespace Digitonic\MediaTonic\Filament\Concerns;
 
-use Digitonic\Mediatonic\Filament\Models\Media;
+use Digitonic\MediaTonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-trait UsesMediatonic
+trait UsesMediaTonic
 {
-    public function mediatonicMedia(): MorphOne
+    public function mediaTonicMedia(): MorphOne
     {
-        $model = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+        $model = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
 
         return $this->morphOne($model, name: 'model', type: 'model_type', id: 'model_id');
     }
@@ -17,7 +17,7 @@ trait UsesMediatonic
     /**
      * Convenience helper to attach a new media row to this model.
      */
-    public function addMediatonicMedia(
+    public function addMediaTonicMedia(
         string $filename,
         ?array $presets = null,
         ?string $alt = null,
@@ -25,7 +25,7 @@ trait UsesMediatonic
         ?string $description = null,
         ?string $caption = null
     ): Media {
-        return $this->mediatonicMedia()->create([
+        return $this->mediaTonicMedia()->create([
             'filename' => $filename,
             'presets' => $presets,
             'alt' => $alt,
@@ -38,8 +38,8 @@ trait UsesMediatonic
     /**
      * Remove a media record (by id) that belongs to this model.
      */
-    public function removeMediatonicMedia(int $mediaId): bool
+    public function removeMediaTonicMedia(int $mediaId): bool
     {
-        return (bool) $this->mediatonicMedia()->whereKey($mediaId)->delete();
+        return (bool) $this->mediaTonicMedia()->whereKey($mediaId)->delete();
     }
 }

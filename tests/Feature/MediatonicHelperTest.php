@@ -1,6 +1,6 @@
 <?php
 
-use Digitonic\Mediatonic\Filament\Models\Media;
+use Digitonic\MediaTonic\Filament\Models\Media;
 
 it('returns null when filename empty', function () {
     expect(mediatonic_asset('', 'original'))->toBeNull();

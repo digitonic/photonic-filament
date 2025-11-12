@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic;
+namespace Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic;
 
 use Saloon\Contracts\Authenticator;
 use Saloon\Http\Auth\TokenAuthenticator;

@@ -1,10 +1,10 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Forms\Components;
+namespace Digitonic\MediaTonic\Filament\Forms\Components;
 
-use Digitonic\Mediatonic\Filament\Enums\PresetEnum;
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\DeleteAsset;
+use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\DeleteAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -15,9 +15,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
-class MediatonicImageField extends Group
+class MediaTonicImageField extends Group
 {
-    protected string $relationName = 'mediatonicMedia';
+    protected string $relationName = 'mediaTonicMedia';
 
     /**
      * Field key used to mount the upload "dummy" state.
@@ -75,8 +75,8 @@ class MediatonicImageField extends Group
      */
     protected function buildRelationModeSchema(): array
     {
-        // Create the input component and store reference
-        $this->inputComponent = MediatonicInput::make($this->uploadFieldName)
+        // Create the input componentUsesMediaTonic and store reference
+        $this->inputComponent = MediaTonicInput::make($this->uploadFieldName)
             ->label('Upload Your Media')
             ->helperText('Media will be uploaded to MediaTonic')
             // Avoid saving uploader value to model
@@ -243,7 +243,7 @@ class MediatonicImageField extends Group
         $mediaIdField = $this->mediaIdField ?? $this->getStatePath();
 
         // Create the input component and store reference
-        $this->inputComponent = MediatonicInput::make($this->uploadFieldName)
+        $this->inputComponent = MediaTonicInput::make($this->uploadFieldName)
             ->returnId()
             ->dehydrated(false)
             ->multiple(false)
@@ -314,7 +314,7 @@ class MediatonicImageField extends Group
                         return 'No image available';
                     }
 
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                     $media = $mediaModelClass::find($mediaId);
 
                     if (! $media) {
@@ -346,8 +346,9 @@ class MediatonicImageField extends Group
                     if (blank($mediaId)) {
                         return null;
                     }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                     $media = $mediaModelClass::find($mediaId);
+
                     return $media->alt ?? null;
                 })
                 ->columnSpan(['sm' => 2]),
@@ -360,8 +361,9 @@ class MediatonicImageField extends Group
                     if (blank($mediaId)) {
                         return null;
                     }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                     $media = $mediaModelClass::find($mediaId);
+
                     return $media->title ?? null;
                 })
                 ->columnSpan(['sm' => 2]),
@@ -374,8 +376,9 @@ class MediatonicImageField extends Group
                     if (blank($mediaId)) {
                         return null;
                     }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                     $media = $mediaModelClass::find($mediaId);
+
                     return $media->description ?? null;
                 })
                 ->columnSpan(['sm' => 2]),
@@ -388,8 +391,9 @@ class MediatonicImageField extends Group
                     if (blank($mediaId)) {
                         return null;
                     }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                     $media = $mediaModelClass::find($mediaId);
+
                     return $media->caption ?? null;
                 })
                 ->columnSpan(['sm' => 2]),
@@ -404,7 +408,7 @@ class MediatonicImageField extends Group
                     ->action(function ($get, $set, $livewire) use ($mediaIdField) {
                         $mediaId = $get($mediaIdField);
                         if ($mediaId) {
-                            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\Mediatonic\Filament\Models\Media::class);
+                            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                             $media = $mediaModelClass::find($mediaId);
 
                             if ($media) {
@@ -494,24 +498,24 @@ class MediatonicImageField extends Group
 
     /**
      * Forward method calls to the underlying MediatonicInput component.
-     * 
+     *
      * This magic method allows any standard Filament form component method to be called
      * on MediatonicImageField, and it will be automatically forwarded to the internal
      * MediatonicInput upload component. This includes methods like:
-     * 
+     *
      * - ->visible() / ->hidden()
      * - ->required() / ->requiredIf() / ->requiredWith()
      * - ->disabled() / ->readonly()
      * - ->default() / ->placeholder()
      * - ->helperText() / ->hint() / ->hintIcon()
      * - And any other Filament form component method
-     * 
+     *
      * Example:
      *   MediatonicImageField::make('image')
      *       ->required()
      *       ->visible(fn($get) => $get('needs_image'))
      *       ->helperText('Upload a high-quality image');
-     * 
+     *
      * The method calls are either applied immediately if the component is set up,
      * or queued to be applied during the setUp() phase if called before initialization.
      */
@@ -531,7 +535,7 @@ class MediatonicImageField extends Group
         // If the input component exists, call the method on it directly
         if ($this->inputComponent !== null) {
             $result = $this->inputComponent->{$method}(...$parameters);
-            
+
             // If the method returns the input component (for chaining), return $this instead
             return $result === $this->inputComponent ? $this : $result;
         }

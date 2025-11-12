@@ -1,8 +1,8 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests;
+namespace Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests;
 
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Traits\Request\HasConnector;

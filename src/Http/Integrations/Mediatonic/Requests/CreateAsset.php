@@ -1,8 +1,8 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests;
+namespace Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests;
 
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Saloon\Contracts\Body\HasBody;
 use Saloon\Data\MultipartValue;
 use Saloon\Enums\Method;

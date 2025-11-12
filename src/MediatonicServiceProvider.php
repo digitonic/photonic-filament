@@ -1,11 +1,11 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament;
+namespace Digitonic\MediaTonic\Filament;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class MediatonicServiceProvider extends PackageServiceProvider
+class MediaTonicServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {

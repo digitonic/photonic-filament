@@ -1,7 +1,7 @@
 <?php
 
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
 use Saloon\Data\MultipartValue;
 
 it('builds multipart body with site uuid and file field', function () {

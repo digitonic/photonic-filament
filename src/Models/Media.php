@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\Mediatonic\Filament\Models;
+namespace Digitonic\MediaTonic\Filament\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;

@@ -1,6 +1,6 @@
 <?php
 
-use Digitonic\Mediatonic\Filament\Models\Media;
+use Digitonic\MediaTonic\Filament\Models\Media;
 
 return [
     // Base URL of the third-party API that processes the uploaded image and

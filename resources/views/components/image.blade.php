@@ -1,4 +1,4 @@
-@use(Digitonic\Mediatonic\Filament\Enums\PresetEnum)
+@use(Digitonic\MediaTonic\Filament\Enums\PresetEnum)
 
 @props([
     'preset' => PresetEnum::ORIGINAL->value,

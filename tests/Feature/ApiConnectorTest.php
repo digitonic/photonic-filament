@@ -1,6 +1,6 @@
 <?php
 
-use Digitonic\Mediatonic\Filament\Http\Integrations\Mediatonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 
 it('resolves base url from config', function () {
     config()->set('mediatonic-filament.endpoint', 'https://api.example.test/v1');
