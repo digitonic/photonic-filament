@@ -54,7 +54,6 @@ All options live in `config/mediatonic-filament.php` and can be set via environm
 | api_key | MEDIATONIC_API_KEY | (null) | Bearer API token (created within mediatonic).            |
 | file_field | MEDIATONIC_FILE_FIELD | file | Multipart field name for the uploaded file.              |
 | response_key | MEDIATONIC_RESPONSE_KEY | original_filename | JSON key inside `data` used to pull the stored filename. |
-| record_uploads | MEDIATONIC_RECORD_UPLOADS | true | Enable database recording of each uploaded asset.        |
 | media_model | (class) | `Digitonic\Mediatonic\Filament\Models\Media::class` | Eloquent model used to persist uploads.                  |
 
 ## Trait: `UsesMediatonic`
@@ -97,7 +96,6 @@ Behavior:
   - Sends file via Saloon to API.
   - Extracts filename from `data[response_key]`.
   - Computes metadata: mime, extension, size, width/height, hash name.
-  - If `record_uploads` is true and a record context exists, inserts a row into the media table with `asset_uuid`, `filename`, and `config` JSON.
   - Returns the filename as the field state.
 
 Recording requires the form to have a current record (e.g. editing, not creating without ID yet). Best-effort resolution checks Livewire component APIs and common properties.

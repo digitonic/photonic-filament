@@ -20,9 +20,6 @@ return [
     // key first and then fall back to common alternatives.
     'response_key' => env('MEDIATONIC_RESPONSE_KEY', 'original_filename'),
 
-    // Whether the field should record uploads automatically.
-    'record_uploads' => env('MEDIATONIC_RECORD_UPLOADS', true),
-
     // The table to record uploads to.
     'media_model' => Media::class,
 ];

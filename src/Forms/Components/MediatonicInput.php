@@ -29,7 +29,6 @@ class MediatonicInput extends FileUpload
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string|int {
             $endpoint = config('mediatonic-filament.endpoint');
             $responseKey = config('mediatonic-filament.response_key', 'filename');
-            $shouldRecord = (bool) config('mediatonic-filament.record_uploads', true);
 
             if (blank($endpoint)) {
                 throw new \RuntimeException('Endpoint is not configured. Set mediatonic-filament.endpoint in your config.');
@@ -94,18 +93,15 @@ class MediatonicInput extends FileUpload
                 'hash_name' => $file->hashName(),
             ];
 
-            $mediaId = null;
-            if ($shouldRecord) {
-                $mediaId = $this->recordUpload(
-                    filename: $filename ?? '',
-                    fileConfig: $fileConfig,
-                    jsonResponse: $json,
-                    alt: $alt,
-                    title: $title,
-                    description: $description,
-                    caption: $caption,
-                );
-            }
+            $mediaId = $this->recordUpload(
+                filename: $filename ?? '',
+                fileConfig: $fileConfig,
+                jsonResponse: $json,
+                alt: $alt,
+                title: $title,
+                description: $description,
+                caption: $caption,
+            );
 
             // Return media ID if configured, otherwise return filename
             if ($this->returnMediaId && $mediaId !== null) {

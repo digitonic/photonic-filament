@@ -1,23 +1,21 @@
 @use(Digitonic\Mediatonic\Filament\Enums\PresetEnum)
 
 @props([
-    'filename' => null,
     'preset' => PresetEnum::ORIGINAL->value,
-    'alt' => null,
     'class' => 'object-cover w-auto',
     'media' => null,
 ])
 
 @php
     $src = mediatonic_asset(
-            filename: $filename,
+            filename:  $media->filename,
             assetUuid: $media->asset_uuid,
             preset: $preset
         );
 
     $classes = $attributes->has('class') ? $attributes->get('class') : $class;
     // Prioritize media.alt over passed alt over filename
-    $altText = $media->alt ?? $alt ?? $filename;
+    $altText = $media->alt ?? $media->filename;
 @endphp
 
 <img src="{{ $src }}" alt="{{ $altText }}" {{ $attributes->except('class') }} class="{{ $classes }}" />
