@@ -4,6 +4,7 @@ namespace Digitonic\MediaTonic\Filament\Forms\Components;
 
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
+use Digitonic\MediaTonic\Filament\Services\MediaUploadService;
 use Filament\Forms\Components\FileUpload;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -76,34 +77,29 @@ class MediaTonicInput extends FileUpload
                 $filename = (string) $json[$responseKey];
             }
 
-            // Get the file details from the temporary uploaded file
-            $width = $height = null;
-            $imageInfo = @getimagesize($file->getRealPath());
-            if ($imageInfo !== false) {
-                $width = $imageInfo[0];
-                $height = $imageInfo[1];
+            // Use service to persist media if we have model context
+            $modelClass = $this->getModel();
+            $modelId = $this->resolveCurrentRecordId();
+            $mediaId = null;
+            if ($modelClass && $modelId) {
+                $service = new MediaUploadService();
+                $modelInstance = $modelClass::find($modelId);
+                if ($modelInstance) {
+                    $media = $service->upload($file, [
+                        'model' => $modelInstance,
+                        'alt' => $alt,
+                        'title' => $title,
+                        'description' => $description,
+                        'caption' => $caption,
+                    ]);
+                    $mediaId = $media->id;
+                    // Override filename from service if not already set (ensures consistency)
+                    if ($filename === null) {
+                        $filename = $media->filename;
+                    }
+                }
             }
 
-            $fileConfig = [
-                'mime_type' => $file->getMimeType(),
-                'extension' => $file->getClientOriginalExtension(),
-                'size' => $file->getSize(),
-                'width' => $width,
-                'height' => $height,
-                'hash_name' => $file->hashName(),
-            ];
-
-            $mediaId = $this->recordUpload(
-                filename: $filename ?? '',
-                fileConfig: $fileConfig,
-                jsonResponse: $json,
-                alt: $alt,
-                title: $title,
-                description: $description,
-                caption: $caption,
-            );
-
-            // Return media ID if configured, otherwise return filename
             if ($this->returnMediaId && $mediaId !== null) {
                 return (string) $mediaId;
             }
@@ -123,48 +119,6 @@ class MediaTonicInput extends FileUpload
         return $this;
     }
 
-    /**
-     * @param  array<string, int|string|null>  $fileConfig
-     * @param  array<string, mixed>|null  $jsonResponse
-     * @return int|null The ID of the created media record, or null if not created
-     */
-    protected function recordUpload(
-        string $filename,
-        array $fileConfig,
-        ?array $jsonResponse = null,
-        ?string $alt = null,
-        ?string $title = null,
-        ?string $description = null,
-        ?string $caption = null
-    ): ?int {
-        $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
-
-        // Store asset_uuid (matches migration) if present in response
-        $assetUuid = $jsonResponse['uuid'] ?? null;
-
-        // Original behavior: create with polymorphic relation
-        $modelClass = $this->getModel();
-        $modelId = $this->resolveCurrentRecordId();
-
-        if (! $modelClass || ! $modelId) {
-            // No model context; skip recording.
-            return null;
-        }
-
-        $media = $mediaModelClass::create([
-            'model_type' => $modelClass,
-            'model_id' => $modelId,
-            'asset_uuid' => $assetUuid,
-            'filename' => $filename,
-            'alt' => $alt,
-            'title' => $title,
-            'description' => $description,
-            'caption' => $caption,
-            'config' => $fileConfig,
-        ]);
-
-        return $media->id;
-    }
 
     /**
      * Best-effort resolution of the current record ID from the Livewire component.

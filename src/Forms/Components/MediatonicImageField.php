@@ -6,11 +6,13 @@ use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\DeleteAsset;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -99,47 +101,6 @@ class MediaTonicImageField extends Group
             // 1) Uploader - only visible when no related media exists.
             $this->inputComponent,
 
-            // Metadata fields for new uploads
-            TextInput::make('mediatonic_alt')
-                ->label('Alt Text')
-                ->maxLength(255)
-                ->helperText('Alternative text for the image (for accessibility)')
-                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
-                ->dehydrated(false)
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
-
-            TextInput::make('mediatonic_title')
-                ->label('Title')
-                ->maxLength(255)
-                ->helperText('Title of the image')
-                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
-                ->dehydrated(false)
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
-
-            Textarea::make('mediatonic_description')
-                ->label('Description')
-                ->rows(3)
-                ->helperText('Detailed description of the image')
-                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
-                ->dehydrated(false)
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
-
-            Textarea::make('mediatonic_caption')
-                ->label('Caption')
-                ->rows(2)
-                ->helperText('Caption to display with the image')
-                ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
-                ->dehydrated(false)
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
-
             // 2) Preview placeholder - only visible when relation exists
             TextEntry::make('img_preview'.'_preview_'.Str::random(2))
                 ->label('Image Preview')
@@ -171,33 +132,41 @@ class MediaTonicImageField extends Group
                 ->extraAttributes(['class' => 'prose'])
                 ->columnSpanFull(),
 
-            // Metadata fields for existing uploads (read-only display)
-            TextEntry::make($this->relationName.'.alt')
-                ->label('Alt Text')
-                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
+            Section::make('Image Details')
+                ->relationship($this->relationName)
+                ->schema([
+                    // Metadata fields for new uploads
+                    TextInput::make('alt')
+                        ->label('Alt Text')
+                        ->maxLength(255)
+                        ->helperText('Alternative text for the image (for accessibility)')
+                        ->columnSpan([
+                            'sm' => 2,
+                        ]),
 
-            TextEntry::make($this->relationName.'.title')
-                ->label('Title')
-                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
+                    TextInput::make('title')
+                        ->label('Title')
+                        ->maxLength(255)
+                        ->helperText('Title of the image')
+                        ->columnSpan([
+                            'sm' => 2,
+                        ]),
 
-            TextEntry::make($this->relationName.'.description')
-                ->label('Description')
-                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
-                ->columnSpan([
-                    'sm' => 2,
-                ]),
+                    Textarea::make('description')
+                        ->label('Description')
+                        ->rows(3)
+                        ->helperText('Detailed description of the image')
+                        ->columnSpan([
+                            'sm' => 2,
+                        ]),
 
-            TextEntry::make($this->relationName.'.caption')
-                ->label('Caption')
-                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
-                ->columnSpan([
-                    'sm' => 2,
+                    Textarea::make('caption')
+                        ->label('Caption')
+                        ->rows(2)
+                        ->helperText('Caption to display with the image')
+                        ->columnSpan([
+                            'sm' => 2,
+                        ]),
                 ]),
 
             // 3) Remove / replace action
