@@ -142,23 +142,6 @@ class MediaTonicInput extends FileUpload
         // Store asset_uuid (matches migration) if present in response
         $assetUuid = $jsonResponse['uuid'] ?? null;
 
-        // When returnMediaId is true, we create a standalone media record without polymorphic relation
-        if ($this->returnMediaId) {
-            $media = $mediaModelClass::create([
-                'model_type' => null,
-                'model_id' => null,
-                'asset_uuid' => $assetUuid,
-                'filename' => $filename,
-                'alt' => $alt,
-                'title' => $title,
-                'description' => $description,
-                'caption' => $caption,
-                'config' => $fileConfig,
-            ]);
-
-            return $media->id;
-        }
-
         // Original behavior: create with polymorphic relation
         $modelClass = $this->getModel();
         $modelId = $this->resolveCurrentRecordId();
