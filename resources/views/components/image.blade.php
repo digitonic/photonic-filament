@@ -7,6 +7,9 @@
 ])
 
 @php
+    if($media === null) {
+        return;
+    }
     $src = mediatonic_asset(
             filename:  $media->filename,
             assetUuid: $media->asset_uuid,

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create(get_mediatonic_table_name(), function (Blueprint $table) {
             $table->id();
-            $table->string('asset_uuid', 36)->unique()->index(); // This is the UUID assigned by Mediatonic
+            $table->string('asset_uuid', 36)->index(); // This is the UUID assigned by Mediatonic
             // Polymorphic relation to the owning model (nullable for standalone media records)
             $table->string('model_type')->nullable();
             $table->unsignedBigInteger('model_id')->nullable();
@@ -23,6 +23,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['model_type', 'model_id']);
+            $table->unique(['asset_uuid', 'model_id']);// Ensure unique combination of asset_uuid and model id so multiple
         });
     }
 
