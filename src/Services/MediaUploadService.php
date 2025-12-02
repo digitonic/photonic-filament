@@ -2,11 +2,11 @@
 
 namespace Digitonic\MediaTonic\Filament\Services;
 
-use Digitonic\MediaTonic\Filament\Http\Integrations\Mediatonic\API;
-use Digitonic\MediaTonic\Filament\Http\Integrations\Mediatonic\Requests\CreateAsset;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
+use Digitonic\MediaTonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
-use Digitonic\MediaTonic\Filament\Models\Media;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class MediaUploadService
@@ -16,7 +16,7 @@ class MediaUploadService
      * Returns the created Media model.
      *
      * @param  UploadedFile|TemporaryUploadedFile|string|resource  $file  A file instance, local path, or stream resource
-     * @param  array<string,mixed>  $options Additional metadata: alt, title, description, caption, model (Eloquent model), site_uuid override
+     * @param  array<string,mixed>  $options  Additional metadata: alt, title, description, caption, model (Eloquent model), site_uuid override
      */
     public function upload($file, array $options = []): Media
     {
@@ -42,7 +42,7 @@ class MediaUploadService
             caption: $options['caption'] ?? null,
         );
 
-        $api = new API();
+        $api = new API;
         $response = $api->send($request);
         $json = $response->json()['data'] ?? [];
 
@@ -77,7 +77,7 @@ class MediaUploadService
      * Convenience method: upload and return only the media ID.
      *
      * @param  UploadedFile|TemporaryUploadedFile|string|resource  $file
-     * @param  array<string,mixed> $options
+     * @param  array<string,mixed>  $options
      */
     public function uploadAndReturnId($file, array $options = []): int
     {
@@ -110,6 +110,7 @@ class MediaUploadService
         // Standard UploadedFile
         if ($file instanceof UploadedFile) {
             $stream = fopen($file->getRealPath(), 'r');
+
             return [$stream, $file->getClientOriginalName()];
         }
 
@@ -119,6 +120,7 @@ class MediaUploadService
                 throw new \InvalidArgumentException("File path '{$file}' does not exist or is not a file.");
             }
             $stream = fopen($file, 'r');
+
             return [$stream, basename($file)];
         }
 
@@ -129,12 +131,17 @@ class MediaUploadService
      * Build config array (mime, extension, size, dimensions, hash_name placeholder) similar to form component.
      *
      * @param  UploadedFile|TemporaryUploadedFile|string|resource  $file
-     * @param  resource $stream
+     * @param  resource  $stream
      * @return array<string,int|string|null>
      */
     protected function buildFileConfig($file, $stream): array
     {
-        $mime = null; $size = null; $extension = null; $hashName = null; $width = null; $height = null;
+        $mime = null;
+        $size = null;
+        $extension = null;
+        $hashName = null;
+        $width = null;
+        $height = null;
 
         // Width/height only if we can get a real path
         $path = null;
@@ -183,4 +190,3 @@ class MediaUploadService
         ];
     }
 }
-

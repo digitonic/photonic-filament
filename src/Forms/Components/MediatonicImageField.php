@@ -6,7 +6,6 @@ use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\DeleteAsset;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -133,7 +132,7 @@ class MediaTonicImageField extends Group
                 ->columnSpanFull(),
 
             Section::make('Image Details')
-                ->visible(fn (?Model $record): bool => ($record)? ($record->{$this->relationName}->exists()): false)
+                ->visible(fn (?Model $record): bool => ($record) ? ($record->{$this->relationName}->exists()) : false)
                 ->live()
                 ->relationship($this->relationName)
                 ->schema([
@@ -242,7 +241,6 @@ class MediaTonicImageField extends Group
             // Uploader - visible when no media ID exists
             $this->inputComponent,
 
-
             Section::make('Image Details')
                 ->relationship($this->relationName)
                 ->schema([
@@ -270,7 +268,7 @@ class MediaTonicImageField extends Group
                         ->label('Caption')
                         ->rows(2)
                         ->helperText('Caption to display with the image')
-                        ->columnSpan(['sm' => 2])
+                        ->columnSpan(['sm' => 2]),
                 ]),
 
             // Remove action

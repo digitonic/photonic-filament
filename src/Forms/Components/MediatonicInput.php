@@ -82,7 +82,7 @@ class MediaTonicInput extends FileUpload
             $modelId = $this->resolveCurrentRecordId();
             $mediaId = null;
             if ($modelClass && $modelId) {
-                $service = new MediaUploadService();
+                $service = new MediaUploadService;
                 $modelInstance = $modelClass::find($modelId);
                 if ($modelInstance) {
                     $media = $service->upload($file, [
@@ -118,7 +118,6 @@ class MediaTonicInput extends FileUpload
 
         return $this;
     }
-
 
     /**
      * Best-effort resolution of the current record ID from the Livewire component.

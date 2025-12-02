@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['model_type', 'model_id']);
-            $table->unique(['asset_uuid', 'model_id']);// Ensure unique combination of asset_uuid and model id so multiple
+            $table->unique(['asset_uuid', 'model_id']); // Ensure unique combination of asset_uuid and model id so multiple
         });
     }
 
