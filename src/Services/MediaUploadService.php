@@ -33,7 +33,7 @@ class MediaUploadService
         [$fileStream, $originalName] = $this->resolveFileStreamAndName($file);
 
         $request = new CreateAsset(
-            siteId: $options['site_uuid'] ?? null,
+            siteId: config('mediatonic-filament.site_uuid'),
             fileStream: $fileStream,
             fileName: $originalName,
             alt: $options['alt'] ?? null,

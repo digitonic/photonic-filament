@@ -104,7 +104,7 @@ class MediaTonicImageField extends Group
             // 2) Preview placeholder - only visible when relation exists
             TextEntry::make('img_preview'.'_preview_'.Str::random(2))
                 ->label('Image Preview')
-                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
+                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? false))
                 ->state(function (?Model $record) {
                     $media = $record->{$this->relationName} ?? null;
                     if (! $record || ! $media) {
@@ -133,6 +133,8 @@ class MediaTonicImageField extends Group
                 ->columnSpanFull(),
 
             Section::make('Image Details')
+                ->visible(fn (?Model $record): bool => ($record)? ($record->{$this->relationName}->exists()): false)
+                ->live()
                 ->relationship($this->relationName)
                 ->schema([
                     // Metadata fields for new uploads
@@ -240,132 +242,36 @@ class MediaTonicImageField extends Group
             // Uploader - visible when no media ID exists
             $this->inputComponent,
 
-            // Metadata fields for new uploads
-            TextInput::make('mediatonic_alt')
-                ->label('Alt Text')
-                ->maxLength(255)
-                ->helperText('Alternative text for the image (for accessibility)')
-                ->hidden(fn ($get) => filled($get($mediaIdField)))
-                ->dehydrated(false)
-                ->columnSpan(['sm' => 2]),
 
-            TextInput::make('mediatonic_title')
-                ->label('Title')
-                ->maxLength(255)
-                ->helperText('Title of the image')
-                ->hidden(fn ($get) => filled($get($mediaIdField)))
-                ->dehydrated(false)
-                ->columnSpan(['sm' => 2]),
+            Section::make('Image Details')
+                ->relationship($this->relationName)
+                ->schema([
 
-            Textarea::make('mediatonic_description')
-                ->label('Description')
-                ->rows(3)
-                ->helperText('Detailed description of the image')
-                ->hidden(fn ($get) => filled($get($mediaIdField)))
-                ->dehydrated(false)
-                ->columnSpan(['sm' => 2]),
+                    // Metadata fields for new uploads
+                    TextInput::make('alt')
+                        ->label('Alt Text')
+                        ->maxLength(255)
+                        ->helperText('Alternative text for the image (for accessibility)')
+                        ->columnSpan(['sm' => 2]),
 
-            Textarea::make('mediatonic_caption')
-                ->label('Caption')
-                ->rows(2)
-                ->helperText('Caption to display with the image')
-                ->hidden(fn ($get) => filled($get($mediaIdField)))
-                ->dehydrated(false)
-                ->columnSpan(['sm' => 2]),
+                    TextInput::make('title')
+                        ->label('Title')
+                        ->maxLength(255)
+                        ->helperText('Title of the image')
+                        ->columnSpan(['sm' => 2]),
 
-            // Preview - visible when media ID exists
-            TextEntry::make($mediaIdField.'_preview')
-                ->label('Image Preview')
-                ->hidden(fn ($get) => blank($get($mediaIdField)))
-                ->state(function ($get) use ($mediaIdField) {
-                    $mediaId = $get($mediaIdField);
-                    if (blank($mediaId)) {
-                        return 'No image available';
-                    }
+                    Textarea::make('description')
+                        ->label('Description')
+                        ->rows(3)
+                        ->helperText('Detailed description of the image')
+                        ->columnSpan(['sm' => 2]),
 
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
-                    $media = $mediaModelClass::find($mediaId);
-
-                    if (! $media) {
-                        return 'Media not found';
-                    }
-
-                    /** @var view-string $viewName */
-                    $viewName = 'mediatonic-filament::components.image';
-
-                    $html = view($viewName, [
-                        'filename' => $media->filename,
-                        'preset' => $this->previewPreset,
-                        'class' => $this->previewClasses,
-                        'alt' => $media->alt ?? $media->filename,
-                        'media' => $media,
-                    ])->render();
-
-                    return new HtmlString($html);
-                })
-                ->extraAttributes(['class' => 'prose'])
-                ->columnSpanFull(),
-
-            // Metadata display for existing media
-            TextEntry::make($mediaIdField.'_alt')
-                ->label('Alt Text')
-                ->hidden(fn ($get) => blank($get($mediaIdField)))
-                ->state(function ($get) use ($mediaIdField) {
-                    $mediaId = $get($mediaIdField);
-                    if (blank($mediaId)) {
-                        return null;
-                    }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
-                    $media = $mediaModelClass::find($mediaId);
-
-                    return $media->alt ?? null;
-                })
-                ->columnSpan(['sm' => 2]),
-
-            TextEntry::make($mediaIdField.'_title')
-                ->label('Title')
-                ->hidden(fn ($get) => blank($get($mediaIdField)))
-                ->state(function ($get) use ($mediaIdField) {
-                    $mediaId = $get($mediaIdField);
-                    if (blank($mediaId)) {
-                        return null;
-                    }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
-                    $media = $mediaModelClass::find($mediaId);
-
-                    return $media->title ?? null;
-                })
-                ->columnSpan(['sm' => 2]),
-
-            TextEntry::make($mediaIdField.'_description')
-                ->label('Description')
-                ->hidden(fn ($get) => blank($get($mediaIdField)))
-                ->state(function ($get) use ($mediaIdField) {
-                    $mediaId = $get($mediaIdField);
-                    if (blank($mediaId)) {
-                        return null;
-                    }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
-                    $media = $mediaModelClass::find($mediaId);
-
-                    return $media->description ?? null;
-                })
-                ->columnSpan(['sm' => 2]),
-
-            TextEntry::make($mediaIdField.'_caption')
-                ->label('Caption')
-                ->hidden(fn ($get) => blank($get($mediaIdField)))
-                ->state(function ($get) use ($mediaIdField) {
-                    $mediaId = $get($mediaIdField);
-                    if (blank($mediaId)) {
-                        return null;
-                    }
-                    $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
-                    $media = $mediaModelClass::find($mediaId);
-
-                    return $media->caption ?? null;
-                })
-                ->columnSpan(['sm' => 2]),
+                    Textarea::make('caption')
+                        ->label('Caption')
+                        ->rows(2)
+                        ->helperText('Caption to display with the image')
+                        ->columnSpan(['sm' => 2])
+                ]),
 
             // Remove action
             Actions::make([
