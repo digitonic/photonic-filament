@@ -132,7 +132,7 @@ class MediaTonicImageField extends Group
                 ->columnSpanFull(),
 
             Section::make('Image Details')
-                ->visible(fn (?Model $record): bool => ($record) ? ($record->{$this->relationName}->exists()) : false)
+                ->visible(fn (?Model $record): bool => ($record && $record->{$this->relationName}) ? ($record->{$this->relationName}->exists()) : false)
                 ->live()
                 ->relationship($this->relationName)
                 ->schema([
