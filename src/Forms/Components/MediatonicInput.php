@@ -85,8 +85,10 @@ class MediaTonicInput extends FileUpload
                 $service = new MediaUploadService;
                 $modelInstance = $modelClass::find($modelId);
                 if ($modelInstance) {
+                    // When returning media ID (ID mode), don't associate with model via morph columns
+                    // This allows the same model to have both ID-based and relationship-based media
                     $media = $service->upload($file, [
-                        'model' => $modelInstance,
+                        'model' => $this->returnMediaId ? null : $modelInstance,
                         'alt' => $alt,
                         'title' => $title,
                         'description' => $description,

@@ -5,13 +5,16 @@ namespace Digitonic\MediaTonic\Filament\Forms\Components;
 use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\DeleteAsset;
+use Digitonic\MediaTonic\Filament\Models\Media;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -207,22 +210,71 @@ class MediaTonicImageField extends Group
 
     /**
      * Build schema for ID mode (stores media ID directly).
+     * In this mode, the media ID is stored in a field on the model (e.g., in a JSON column),
+     * rather than using a polymorphic relationship via model_type/model_id.
      */
     protected function buildIdModeSchema(): array
     {
         $mediaIdField = $this->mediaIdField ?? $this->getStatePath();
+        $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+
+        // Helper to safely extract media ID from state (could be int, string, TemporaryUploadedFile, or null)
+        $extractMediaId = function (mixed $value): ?int {
+            if (is_null($value)) {
+                return null;
+            }
+
+            if (is_int($value)) {
+                return $value;
+            }
+
+            if (is_numeric($value)) {
+                return (int) $value;
+            }
+
+            // If it's a TemporaryUploadedFile or any other non-numeric value, return null
+            return null;
+        };
+
+        // Helper to get media by ID
+        /** @var callable(mixed): ?Media $getMediaById */
+        $getMediaById = fn (mixed $value): ?Media => ($id = $extractMediaId($value)) ? $mediaModelClass::find($id) : null;
+        $strRandom = Str::random(4);
 
         // Create the input component and store reference
-        $this->inputComponent = MediaTonicInput::make($this->uploadFieldName)
+        $this->inputComponent = MediaTonicInput::make($mediaIdField)
+            ->label('Upload Your Media ID')
+            ->helperText('Media will be uploaded to MediaTonic')
             ->returnId()
-            ->dehydrated(false)
             ->multiple(false)
-            ->hidden(fn ($get) => filled($get($mediaIdField)))
-            ->afterStateUpdated(function ($state, $set) use ($mediaIdField) {
-                // When upload completes, store the returned ID
-                if ($state) {
-                    $set($mediaIdField, $state);
+            ->visible(fn (?Model $record): bool => empty($record?->{$this->relationName}))
+            ->live()
+            ->afterStateHydrated(function (Get $get, $set, $state) use ($mediaIdField, $strRandom, $getMediaById) {
+                // When a new media ID is set, refresh the form to show preview/details
+                $media = $getMediaById($get($mediaIdField));
+                if (! $media) {
+                    return 'No image available';
                 }
+
+                $filename = $media->filename ?? null;
+                if (! $filename) {
+                    return 'No image available';
+                }
+
+                /** @var view-string $viewName */
+                $viewName = 'mediatonic-filament::components.image';
+
+                $html = view($viewName, [
+                    'filename' => $filename,
+                    'preset' => $this->previewPreset,
+                    'class' => $this->previewClasses,
+                    'alt' => $media->alt ?? $filename,
+                    'media' => $media,
+                ])->render();
+
+                $set('img_preview_id_mode_'.$strRandom, $html);
+
+                return $state;
             })
             ->columnSpan(['sm' => 2]);
 
@@ -232,20 +284,60 @@ class MediaTonicImageField extends Group
         }
 
         return [
-            // Hidden field to store the media ID
-            TextInput::make($mediaIdField)
-                ->label('Media')
-                ->hidden()
-                ->dehydrated(),
-
             // Uploader - visible when no media ID exists
             $this->inputComponent,
 
+            // Hidden field so when our input component is missing the we still preserve the media ID
+            Hidden::make($mediaIdField)
+                ->formatStateUsing(function ($state) {
+                    // Array returns a pattern of UUID -> ID, we need just the ID
+                    return array_values($state)[0] ?? null;
+                })
+                ->hidden(fn (?Model $record): bool => empty($record?->{$this->relationName})),
+
+            // Preview - visible when media ID exists
+            TextEntry::make('img_preview_id_mode_'.$strRandom)
+                ->label('Image Preview')
+                // Hide this if the state is empty
+                ->hidden(fn (?Model $record): bool => empty($record?->{$this->relationName}))
+                ->live()
+                ->formatStateUsing(function (Get $get, $state) use ($mediaIdField, $getMediaById) {
+                    if ($state) {
+                        return new HtmlString($state);
+                    }
+
+                    // When a new media ID is set, refresh the form to show preview/details
+                    $media = $getMediaById($get($mediaIdField));
+
+                    if (! $media) {
+                        return 'No image available';
+                    }
+
+                    $filename = $media->filename ?? null;
+                    if (! $filename) {
+                        return 'No image available';
+                    }
+
+                    /** @var view-string $viewName */
+                    $viewName = 'mediatonic-filament::components.image';
+
+                    $html = view($viewName, [
+                        'filename' => $filename,
+                        'preset' => $this->previewPreset,
+                        'class' => $this->previewClasses,
+                        'alt' => $media->alt ?? $filename,
+                        'media' => $media,
+                    ])->render();
+
+                    return new HtmlString($html);
+                })
+                ->columnSpanFull(),
+
+            // Image Details Section
             Section::make('Image Details')
+                ->hidden(fn (?Model $record): bool => empty($record?->{$this->relationName}))
                 ->relationship($this->relationName)
                 ->schema([
-
-                    // Metadata fields for new uploads
                     TextInput::make('alt')
                         ->label('Alt Text')
                         ->maxLength(255)
@@ -269,7 +361,8 @@ class MediaTonicImageField extends Group
                         ->rows(2)
                         ->helperText('Caption to display with the image')
                         ->columnSpan(['sm' => 2]),
-                ]),
+                ])
+                ->columnSpanFull(),
 
             // Remove action
             Actions::make([
@@ -277,11 +370,10 @@ class MediaTonicImageField extends Group
                     ->label(__('Remove Image'))
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->hidden(fn ($get) => blank($get($mediaIdField)))
-                    ->action(function ($get, $set, $livewire) use ($mediaIdField) {
-                        $mediaId = $get($mediaIdField);
+                    ->hidden(fn (?Model $record): bool => empty($record?->{$this->relationName}))
+                    ->action(function (Get $get, $set, $livewire) use ($mediaIdField, $mediaModelClass, $extractMediaId) {
+                        $mediaId = $extractMediaId($get($mediaIdField));
                         if ($mediaId) {
-                            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
                             $media = $mediaModelClass::find($mediaId);
 
                             if ($media) {
@@ -298,7 +390,8 @@ class MediaTonicImageField extends Group
                             }
                         }
                     }),
-            ])->columnSpanFull()
+            ])
+                ->columnSpanFull()
                 ->visible($this->showRemoveAction),
         ];
     }
