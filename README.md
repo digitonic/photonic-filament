@@ -1,6 +1,7 @@
 # Mediatonic Filament Package
 
 A Filament 4 form component package for Laravel 12 that uploads image assets to a third‑party Mediatonic API, stores metadata in your database, and renders CDN image URLs. It does not persist the uploaded file locally.
+We intend this package to be used with the MediaTonic Server API. No support will be given for other APIs, or reverse engineering any of the calls done here.
 
 <p align="center">
 <img src="https://img.shields.io/github/actions/workflow/status/digitonic/mediatonic-filament/.github%2Fworkflows%2Ftests.yml?style=for-the-badge&logo=laravel&logoColor=white" alt="workflow build status">
@@ -13,7 +14,7 @@ A Filament 4 form component package for Laravel 12 that uploads image assets to 
 - Optionally records each upload to a dedicated `mediatonic` table.
 - Provides:
   - `MediaTonicInput` – raw upload field (extends Filament's `FileUpload`).
-  - `MediaTonicImageField` – composite helper (upload + preview + delete).
+  - `MediaTonicImageField` – composite helper (upload + preview + delete + meta info).
   - Blade component `<x-mediatonic-filament::image>` for rendering CDN URLs.
 - Helper functions:
   - `mediatonic_asset($filename, $preset = 'original')` URL builder.
@@ -24,6 +25,7 @@ A Filament 4 form component package for Laravel 12 that uploads image assets to 
 
 - PHP: 8.2+
 - Filament: 4.x
+- MediaTonic Server API
 
 ## Installation
 
@@ -106,28 +108,32 @@ Composite helper providing upload + preview + delete:
 
 ```php
 use Digitonic\Mediatonic\Filament\Forms\Components\MediatonicImageField;
+// Relational Mode (store media relation on model)
+MediaTonicImageField::make()
+    ->previewClasses('rounded-xl max-w-full h-auto')
+    ->columnSpan([
+        'sm' => 2,
+    ]),
 
-MediatonicImageField::make('featured_image')
-    ->relation('mediatonicMedia')  // default relation from trait
-    ->preset('original')          // preview preset segment
-    ->previewClasses('rounded-xl max-w-full h-auto');
+
+// ID Mode (store media ID in JSON field)
+MediaTonicImageField::make([])
+    ->previewClasses('rounded-xl max-w-full h-auto')
+    ->relation('heroBackgroundImage')
+    ->returnId(true, 'hero.background_image')
+    ->columnSpan([
+        'sm' => 2,
+    ]),
 ```
-
-Flow:
-
-1. If no related media exists, shows single-file `MediatonicInput`.
-2. After successful upload and DB record creation, hides uploader and renders preview.
-3. Provides "Remove Image" action to delete the related media row, refreshes form.
 
 ### 3. Blade Image Component
 
 ```blade
 <x-mediatonic-filament::image
-    :filename="$article->mediatonicMedia?->filename"
+    :media="mediatonic_media_by_id($model->meta['background_image'])"
     preset="original"
-    alt="{{ $article->title }}"
-    class="rounded w-full"
-    loading="lazy"
+    style="object-position: 50% 50%"
+    class="max-w-[320px] min-w-[200px] w-full h-auto shrink grow"
 />
 ```
 
@@ -136,7 +142,9 @@ Flow:
 ### Basic URL Building
 
 ```php
+// If you have the relation, you can just use the filename and asset id to build the URL
 mediatonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string;
+
 get_mediatonic_table_name(): string;
 ```
 
@@ -200,8 +208,7 @@ Filament form:
 public static function form(Form $form): Form
 {
     return $form->schema([
-        MediatonicImageField::make('product_image')
-            ->relation('mediatonicMedia')
+        MediatonicImageField::make()
             ->preset('original')
             ->deletable(),
     ]);
@@ -211,13 +218,17 @@ public static function form(Form $form): Form
 Blade display:
 
 ```blade
-<x-mediatonic-filament::image :filename="$product->mediatonicMedia?->filename" preset="original" />
+<x-mediatonic-filament::image
+    :media="$product->mediaTonicMedia"
+    preset="original"
+    style="object-position: 50% 50%"
+    class="max-w-[320px] min-w-[200px] w-full h-auto shrink grow"
+/>
 ```
 
 ## Extending / Customizing
 
 - Change media model: Create a subclass overriding `getTable()` or adding attributes/casts, then set `media_model` in config.
-- Response parsing: Customize `MediatonicInput::setUp()` to add fallback logic or alternate payload handling.
 - Multiple assets: Swap trait + relation to `morphMany`; adjust composite field to handle collections.
 
 # License

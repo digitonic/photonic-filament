@@ -290,6 +290,10 @@ class MediaTonicImageField extends Group
             // Hidden field so when our input component is missing the we still preserve the media ID
             Hidden::make($mediaIdField)
                 ->formatStateUsing(function ($state) {
+                    if (is_null($state)) {
+                        return null;
+                    }
+
                     // Array returns a pattern of UUID -> ID, we need just the ID
                     return array_values($state)[0] ?? null;
                 })
