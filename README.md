@@ -137,6 +137,15 @@ MediaTonicImageField::make([])
 />
 ```
 
+### 4. Table Image Column
+
+You can use the following ImageColumn in Filament tables to display the image from the media relation.
+Please note, the name used in the make, is what the relation is called on the model. If you use the standard mediaTonicMedia relation, use that name.
+```php
+    MediaTonicImageColumn::make('mediaTonicMedia'),
+```
+
+
 ## Helper Functions
 
 ### Basic URL Building

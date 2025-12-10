@@ -1,9 +1,10 @@
 <div class="text-left mt-2 mb-2">
     @php
         $record = $getRecord();
+        $relation = $getName();
 
         // Check the relationship exists
-        $relatedModel = $record->mediaTonicMedia;
+        $relatedModel = $record->{$relation};
 
         if(is_null($relatedModel)) {
             return;

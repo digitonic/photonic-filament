@@ -6,6 +6,10 @@ use Digitonic\MediaTonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
+/**
+ * @mixin \Illuminate\Database\Eloquent\Model
+ * @property-read \Digitonic\MediaTonic\Filament\Models\Media|null $mediaTonicMedia
+ */
 trait UsesMediaTonic
 {
     public function mediaTonicMedia(): MorphOne

@@ -5,6 +5,19 @@ namespace Digitonic\MediaTonic\Filament\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property string $filename
+ * @property string|null $model_type
+ * @property string $asset_uuid
+ * @property string|null $model_id
+ * @property string|null $alt
+ * @property string|null $title
+ * @property string|null $description
+ * @property string|null $caption
+ * @property array|null $config
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
+ */
 class Media extends Model
 {
     /**
