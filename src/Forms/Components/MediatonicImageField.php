@@ -220,7 +220,6 @@ class MediaTonicImageField extends Group
         $mediaIdField = $this->mediaIdField ?? $this->getStatePath();
         $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
 
-        // Helper to safely extract media ID from state (could be int, string, TemporaryUploadedFile, or null)
         $extractMediaId = function (mixed $value): ?int {
             if (is_null($value)) {
                 return null;
@@ -234,7 +233,15 @@ class MediaTonicImageField extends Group
                 return (int) $value;
             }
 
-            // If it's a TemporaryUploadedFile or any other non-numeric value, return null
+            // Handle array - extract first value
+            if (is_array($value)) {
+                $first = array_values($value)[0] ?? null;
+                if (is_numeric($first)) {
+                    return (int) $first;
+                }
+                return null;
+            }
+
             return null;
         };
 
@@ -243,40 +250,25 @@ class MediaTonicImageField extends Group
         $getMediaById = fn (mixed $value): ?Media => ($id = $extractMediaId($value)) ? $mediaModelClass::find($id) : null;
         $strRandom = md5($mediaIdField);
 
-        // Create the input component and store reference
-        $this->inputComponent = MediaTonicInput::make($mediaIdField)
-            ->label('Upload Your Media ID')
+        // Create the input component - use a separate field name for uploads
+        // The actual media ID will be stored via a Hidden field
+        $uploadFieldName = $mediaIdField . '_upload';
+        $this->inputComponent = MediaTonicInput::make($uploadFieldName)
+            ->label('Upload Your Media')
             ->helperText('Media will be uploaded to MediaTonic')
             ->returnId()
             ->multiple(false)
-            ->visible(fn (Get $get): bool => empty($get($mediaIdField)))
-            ->live()
-            ->afterStateHydrated(function (Get $get, $set, $state) use ($mediaIdField, $strRandom, $getMediaById) {
-                // When a new media ID is set, refresh the form to show preview/details
-                $media = $getMediaById($get($mediaIdField));
-                if (! $media) {
-                    return 'No image available';
+            ->dehydrated(false) // Don't save this field - we use the Hidden field
+            ->afterStateUpdated(function ($state, $set) use ($mediaIdField, $extractMediaId) {
+                // When a new file is uploaded, copy the ID to the main field
+                $mediaId = $extractMediaId($state);
+                if ($mediaId) {
+                    $set($mediaIdField, $mediaId);
                 }
-
-                $filename = $media->filename ?? null;
-                if (! $filename) {
-                    return 'No image available';
-                }
-
-                /** @var view-string $viewName */
-                $viewName = 'mediatonic-filament::components.image';
-
-                $html = view($viewName, [
-                    'filename' => $filename,
-                    'preset' => $this->previewPreset,
-                    'class' => $this->previewClasses,
-                    'alt' => $media->alt ?? $filename,
-                    'media' => $media,
-                ])->render();
-
-                $set('img_preview_id_mode_'.$strRandom, $html);
-
-                return $state;
+            })
+            ->visible(function (Get $get) use ($mediaIdField, $extractMediaId): bool {
+                $mediaId = $extractMediaId($get($mediaIdField));
+                return is_null($mediaId);
             })
             ->columnSpan(['sm' => 2]);
 
@@ -286,37 +278,24 @@ class MediaTonicImageField extends Group
         }
 
         return [
+            // Hidden field to store and preserve the media ID
+            // This field always dehydrates, ensuring the ID is saved even when uploader is hidden
+            Hidden::make($mediaIdField)
+                ->dehydrated(true),
+
             // Uploader - visible when no media ID exists
+            // When visible, this component uploads and sets the media ID via afterStateUpdated
             $this->inputComponent,
 
-            // Hidden field so when our input component is missing the we still preserve the media ID
-            Hidden::make($mediaIdField)
-                ->formatStateUsing(function ($state) {
-                    if (is_null($state)) {
-                        return null;
-                    }
-
-                    // Array returns a pattern of UUID -> ID, we need just the ID
-                    return array_values($state)[0] ?? null;
-                })
-                ->hidden(fn (Get $get): bool => empty($get($mediaIdField))),
 
             // Preview - visible when media ID exists
             TextEntry::make('img_preview_id_mode_'.$strRandom)
                 ->label('Image Preview')
                 // Hide this if the state is empty
-                ->hidden(fn (Get $get): bool => empty($get($mediaIdField)))
-                ->formatStateUsing(function (Get $get, $state) use ($mediaIdField, $getMediaById) {
-
-                    dd($state);
-                    if ($state) {
-                        return new HtmlString($state);
-                    }
-
-                    // When a new media ID is set, refresh the form to show preview/details
+                ->hidden(fn (Get $get): bool => empty($extractMediaId($get($mediaIdField))))
+                ->state(function (Get $get) use ($mediaIdField, $getMediaById) {
                     $media = $getMediaById($get($mediaIdField));
 
-                    dd($media);
 
                     if (! $media) {
                         return 'No image available';
