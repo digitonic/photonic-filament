@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 /**
  * @mixin \Illuminate\Database\Eloquent\Model
+ *
  * @property-read \Digitonic\MediaTonic\Filament\Models\Media|null $mediaTonicMedia
  */
 trait UsesMediaTonic
