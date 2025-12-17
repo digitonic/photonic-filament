@@ -11,13 +11,12 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -217,7 +216,7 @@ class MediaTonicImageField extends Group
      */
     protected function buildIdModeSchema(): array
     {
-        $mediaIdField = $this->mediaIdField ?? $this->getStatePath();
+        $mediaIdField = $this->mediaIdField;
         $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
 
         $extractMediaId = function (mixed $value): ?int {
@@ -239,6 +238,7 @@ class MediaTonicImageField extends Group
                 if (is_numeric($first)) {
                     return (int) $first;
                 }
+
                 return null;
             }
 
@@ -252,23 +252,27 @@ class MediaTonicImageField extends Group
 
         // Create the input component - use a separate field name for uploads
         // The actual media ID will be stored via a Hidden field
-        $uploadFieldName = $mediaIdField . '_upload';
-        $this->inputComponent = MediaTonicInput::make($uploadFieldName)
+        $uploadFieldName = $mediaIdField.'_upload';
+
+        $this->inputComponent = MediaTonicInput::make($mediaIdField)
             ->label('Upload Your Media')
             ->helperText('Media will be uploaded to MediaTonic')
             ->returnId()
             ->multiple(false)
-            ->dehydrated(false) // Don't save this field - we use the Hidden field
-            ->afterStateUpdated(function ($state, $set) use ($mediaIdField, $extractMediaId) {
-                // When a new file is uploaded, copy the ID to the main field
-                $mediaId = $extractMediaId($state);
-                if ($mediaId) {
-                    $set($mediaIdField, $mediaId);
+            ->formatStateUsing(function ($state, Set $set) use ($mediaModelClass, $mediaIdField, $strRandom) {
+                // We need to return back the FileName
+                $media = $mediaModelClass::find($state);
+                if ($media) {
+                    $set($mediaIdField, $media->id);
+                    $set('img_preview_id_mode_'.$strRandom, $media->id);
+
+                    return $media->id;
                 }
+
+                return null;
             })
-            ->visible(function (Get $get) use ($mediaIdField, $extractMediaId): bool {
-                $mediaId = $extractMediaId($get($mediaIdField));
-                return is_null($mediaId);
+            ->dehydrateStateUsing(function ($state) use ($extractMediaId) {
+                return $extractMediaId($state);
             })
             ->columnSpan(['sm' => 2]);
 
@@ -278,24 +282,16 @@ class MediaTonicImageField extends Group
         }
 
         return [
-            // Hidden field to store and preserve the media ID
-            // This field always dehydrates, ensuring the ID is saved even when uploader is hidden
-            Hidden::make($mediaIdField)
-                ->dehydrated(true),
-
             // Uploader - visible when no media ID exists
             // When visible, this component uploads and sets the media ID via afterStateUpdated
             $this->inputComponent,
-
 
             // Preview - visible when media ID exists
             TextEntry::make('img_preview_id_mode_'.$strRandom)
                 ->label('Image Preview')
                 // Hide this if the state is empty
-                ->hidden(fn (Get $get): bool => empty($extractMediaId($get($mediaIdField))))
                 ->state(function (Get $get) use ($mediaIdField, $getMediaById) {
                     $media = $getMediaById($get($mediaIdField));
-
 
                     if (! $media) {
                         return 'No image available';
@@ -323,69 +319,77 @@ class MediaTonicImageField extends Group
 
             // Image Details Section - manually hydrate/dehydrate since we can't use ->relationship() in ID mode
             Section::make('Image Details')
-                    ->hidden(fn (Get $get): bool => empty($get($mediaIdField)))
-                    ->schema([
-                        TextInput::make('media_alt'.$strRandom)
-                            ->label('Alt Text')
-                            ->maxLength(255)
-                            ->helperText('Alternative text for the image (for accessibility)')
-                            ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $set('media_alt'.$strRandom, $media?->alt);
-                            })
-                            ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $media?->update(['alt' => $state]);
-                                return null; // Don't save to parent model
-                            })
-                            ->columnSpan(['sm' => 2]),
+                ->visible(function (Get $get) use ($mediaIdField, $extractMediaId): bool {
+                    $mediaId = $extractMediaId($get($mediaIdField));
 
-                        TextInput::make('media_title'.$strRandom)
-                            ->label('Title')
-                            ->maxLength(255)
-                            ->helperText('Title of the image')
-                            ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $set('media_title'.$strRandom, $media?->title);
-                            })
-                            ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $media?->update(['title' => $state]);
-                                return null;
-                            })
-                            ->columnSpan(['sm' => 2]),
+                    return ! is_null($mediaId);
+                })
+                ->schema([
+                    TextInput::make('media_alt'.$strRandom)
+                        ->label('Alt Text')
+                        ->maxLength(255)
+                        ->helperText('Alternative text for the image (for accessibility)')
+                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $set('media_alt'.$strRandom, $media?->alt);
+                        })
+                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $media?->update(['alt' => $state]);
 
-                        Textarea::make('media_description'.$strRandom)
-                            ->label('Description')
-                            ->rows(3)
-                            ->helperText('Detailed description of the image')
-                            ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $set('media_description'.$strRandom, $media?->description);
-                            })
-                            ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $media?->update(['description' => $state]);
-                                return null;
-                            })
-                            ->columnSpan(['sm' => 2]),
+                            return null; // Don't save to parent model
+                        })
+                        ->columnSpan(['sm' => 2]),
 
-                        Textarea::make('media_caption'.$strRandom)
-                            ->label('Caption')
-                            ->rows(2)
-                            ->helperText('Caption to display with the image')
-                            ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $set('media_caption'.$strRandom, $media?->caption);
-                            })
-                            ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                                $media = $getMediaById($get($mediaIdField));
-                                $media?->update(['caption' => $state]);
-                                return null;
-                            })
-                            ->columnSpan(['sm' => 2]),
-                    ])
-                    ->columnSpanFull(),
+                    TextInput::make('media_title'.$strRandom)
+                        ->label('Title')
+                        ->maxLength(255)
+                        ->helperText('Title of the image')
+                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $set('media_title'.$strRandom, $media?->title);
+                        })
+                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $media?->update(['title' => $state]);
+
+                            return null;
+                        })
+                        ->columnSpan(['sm' => 2]),
+
+                    Textarea::make('media_description'.$strRandom)
+                        ->label('Description')
+                        ->rows(3)
+                        ->helperText('Detailed description of the image')
+                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $set('media_description'.$strRandom, $media?->description);
+                        })
+                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $media?->update(['description' => $state]);
+
+                            return null;
+                        })
+                        ->columnSpan(['sm' => 2]),
+
+                    Textarea::make('media_caption'.$strRandom)
+                        ->label('Caption')
+                        ->rows(2)
+                        ->helperText('Caption to display with the image')
+                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $set('media_caption'.$strRandom, $media?->caption);
+                        })
+                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                            $media = $getMediaById($get($mediaIdField));
+                            $media?->update(['caption' => $state]);
+
+                            return null;
+                        })
+                        ->columnSpan(['sm' => 2]),
+                ])
+                ->columnSpanFull(),
 
             // Remove action
             Actions::make([

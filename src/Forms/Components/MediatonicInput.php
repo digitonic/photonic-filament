@@ -3,9 +3,9 @@
 namespace Digitonic\MediaTonic\Filament\Forms\Components;
 
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
 use Digitonic\MediaTonic\Filament\Services\MediaUploadService;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class MediaTonicInput extends FileUpload
@@ -35,78 +35,32 @@ class MediaTonicInput extends FileUpload
                 throw new \RuntimeException('Endpoint is not configured. Set mediatonic-filament.endpoint in your config.');
             }
 
-            // Handle both local and S3 storage scenarios
-            $filePath = $file->getRealPath();
-            if (! file_exists($filePath)) {
-                // Livewire is using S3 or cloud storage, read from temporary URL
-                $fileStream = fopen($file->temporaryUrl(), 'r');
-            } else {
-                // Local storage
-                $fileStream = fopen($filePath, 'r');
-            }
-
-            // Correctly instantiate API connector
-            $api = new API;
-
-            // Get metadata from the form state if available
-            $livewire = $this->getLivewire();
-            $state = method_exists($livewire, 'getState') ? $livewire->getState() : [];
-
-            $alt = $state['mediatonic_alt'] ?? null;
-            $title = $state['mediatonic_title'] ?? null;
-            $description = $state['mediatonic_description'] ?? null;
-            $caption = $state['mediatonic_caption'] ?? null;
-
-            $request = new CreateAsset(
-                siteId: null,
-                fileStream: $fileStream,
-                fileName: $file->getClientOriginalName(),
-                alt: $alt,
-                title: $title,
-                description: $description,
-                caption: $caption
-            );
-            $response = $api->send($request);
-
-            // Parse JSON response when possible
-            $json = $response->json()['data'] ?? [];
-
-            // Determine the filename to return
-            $filename = null;
-            if (array_key_exists($responseKey, $json)) {
-                $filename = (string) $json[$responseKey];
-            }
-
+            $modelInstance = null;
             // Use service to persist media if we have model context
-            $modelClass = $this->getModel();
-            $modelId = $this->resolveCurrentRecordId();
-            $mediaId = null;
-            if ($modelClass && $modelId) {
-                $service = new MediaUploadService;
+            if ($this->returnMediaId === false) {
+                $modelClass = $this->getModel();
+                $modelId = $this->resolveCurrentRecordId();
                 $modelInstance = $modelClass::find($modelId);
-                if ($modelInstance) {
-                    // When returning media ID (ID mode), don't associate with model via morph columns
-                    // This allows the same model to have both ID-based and relationship-based media
-                    $media = $service->upload($file, [
-                        'model' => $this->returnMediaId ? null : $modelInstance,
-                        'alt' => $alt,
-                        'title' => $title,
-                        'description' => $description,
-                        'caption' => $caption,
-                    ]);
-                    $mediaId = $media->id;
-                    // Override filename from service if not already set (ensures consistency)
-                    if ($filename === null) {
-                        $filename = $media->filename;
-                    }
-                }
             }
+
+            $service = new MediaUploadService;
+            // When returning media ID (ID mode), don't associate with model via morph columns
+            // This allows the same model to have both ID-based and relationship-based media
+            $media = $service->upload($file, [
+                'model' => $this->returnMediaId ? null : $modelInstance,
+                'alt' => '',
+                'title' => '',
+                'description' => '',
+                'caption' => '',
+            ]);
+
+            $mediaId = $media->id;
 
             if ($this->returnMediaId && $mediaId !== null) {
                 return (string) $mediaId;
             }
 
-            return $filename ?? '';
+            return $media->filename;
         });
     }
 
