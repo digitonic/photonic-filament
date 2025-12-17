@@ -15,7 +15,6 @@
             assetUuid: $media->asset_uuid,
             preset: $preset
         );
-    dump($class);
     // Prioritize media.alt over passed alt over filename
     $altText = $media->alt ?? $media->filename;
 @endphp

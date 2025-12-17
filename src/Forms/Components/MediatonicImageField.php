@@ -43,7 +43,7 @@ class MediaTonicImageField extends Group
     /**
      * Additional CSS classes applied to the preview <img> tag.
      */
-    protected string $previewClasses = 'rounded-xl max-w-full h-auto';
+    protected string $previewClasses = 'rounded-xl max-w-full';
 
     /**
      * Whether to return the media ID instead of using polymorphic relationship.
@@ -290,7 +290,7 @@ class MediaTonicImageField extends Group
             TextEntry::make('img_preview_id_mode_'.$strRandom)
                 ->label('Image Preview')
                 // Hide this if the state is empty
-                ->state(function (Get $get) use ($mediaIdField, $getMediaById) {
+                ->formatStateUsing(function (Get $get) use ($mediaIdField, $getMediaById) {
                     $media = $getMediaById($get($mediaIdField));
 
                     if (! $media) {
