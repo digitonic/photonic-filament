@@ -4,9 +4,11 @@ namespace Digitonic\MediaTonic\Filament\Services;
 
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
 use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
+use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateSignedUrl;
 use Digitonic\MediaTonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class MediaUploadService
@@ -31,10 +33,49 @@ class MediaUploadService
         }
 
         [$fileStream, $originalName] = $this->resolveFileStreamAndName($file);
+        $fileConfig = $this->buildFileConfig($file, $fileStream);
+        $contentType = $fileConfig['mime_type'] ?? 'application/octet-stream';
 
-        $request = new CreateAsset(
-            siteId: config('mediatonic-filament.site_uuid'),
-            fileStream: $fileStream,
+        // Step 1: Request a signed URL from the API
+        $signedUrlRequest = new CreateSignedUrl(
+            siteId: $options['site_uuid'] ?? config('mediatonic-filament.site_uuid'),
+            fileName: $originalName,
+            contentType: $contentType,
+        );
+
+        $api = new API;
+        $signedUrlResponse = $api->send($signedUrlRequest);
+        $signedUrlData = $signedUrlResponse->json()['data'] ?? [];
+
+        if (empty($signedUrlData['url']) || empty($signedUrlData['key'])) {
+            throw new \RuntimeException('Failed to get signed URL from Mediatonic API. Response: '.json_encode($signedUrlData));
+        }
+
+        $signedUrl = $signedUrlData['url'];
+        $s3Key = $signedUrlData['key'];
+
+        // Step 2: Upload the file to S3 using the signed URL
+        // Read the file content from the stream
+        rewind($fileStream);
+        $fileContent = stream_get_contents($fileStream);
+
+        // Close the stream if it's a resource we opened
+        if (is_resource($fileStream)) {
+            fclose($fileStream);
+        }
+
+        $uploadResponse = Http::withHeaders([
+            'Content-Type' => $contentType,
+        ])->put($signedUrl, $fileContent);
+
+        if (! $uploadResponse->successful()) {
+            throw new \RuntimeException('Failed to upload file to S3. Status: '.$uploadResponse->status());
+        }
+
+        // Step 3: Create the asset record with the S3 key
+        $createAssetRequest = new CreateAsset(
+            siteId: $options['site_uuid'] ?? config('mediatonic-filament.site_uuid'),
+            key: $s3Key,
             fileName: $originalName,
             alt: $options['alt'] ?? null,
             title: $options['title'] ?? null,
@@ -42,15 +83,12 @@ class MediaUploadService
             caption: $options['caption'] ?? null,
         );
 
-        $api = new API;
-        $response = $api->send($request);
+        $response = $api->send($createAssetRequest);
         $json = $response->json()['data'] ?? [];
 
         $responseKey = config('mediatonic-filament.response_key', 'original_filename');
         $filename = $json[$responseKey] ?? $json['filename'] ?? $originalName;
         $assetUuid = $json['uuid'] ?? null;
-
-        $fileConfig = $this->buildFileConfig($file, $fileStream);
 
         /** @var class-string<Media> $mediaModelClass */
         $mediaModelClass = config('mediatonic-filament.media_model', Media::class);
