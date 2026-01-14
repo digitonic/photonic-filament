@@ -45,7 +45,7 @@ class MediaUploadService
 
         $api = new API;
         $signedUrlResponse = $api->send($signedUrlRequest);
-        $signedUrlData = $signedUrlResponse->json()['data'] ?? [];
+        $signedUrlData = $signedUrlResponse->json() ?? [];
 
         if (empty($signedUrlData['url']) || empty($signedUrlData['key'])) {
             throw new \RuntimeException('Failed to get signed URL from Mediatonic API. Response: '.json_encode($signedUrlResponse->json() . ' response context: ' . json_encode($signedUrlResponse)));
@@ -56,7 +56,12 @@ class MediaUploadService
 
         // Step 2: Upload the file to S3 using the signed URL
         // Read the file content from the stream
-        rewind($fileStream);
+        $streamMeta = stream_get_meta_data($fileStream);
+
+        if ($streamMeta['seekable']) {
+            rewind($fileStream);
+        }
+
         $fileContent = stream_get_contents($fileStream);
 
         // Close the stream if it's a resource we opened
@@ -66,7 +71,9 @@ class MediaUploadService
 
         $uploadResponse = Http::withHeaders([
             'Content-Type' => $contentType,
-        ])->put($signedUrl, $fileContent);
+        ])
+            ->withBody($fileContent, $contentType)
+            ->put($signedUrl);
 
         if (! $uploadResponse->successful()) {
             throw new \RuntimeException('Failed to upload file to S3. Status: '.$uploadResponse->status());
