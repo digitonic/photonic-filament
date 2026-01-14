@@ -1,5 +1,5 @@
 <?php
 
-use Digitonic\MediaTonic\Filament\Tests\TestCase;
+use Digitonic\Photonic\Filament\Tests\TestCase;
 
 uses(TestCase::class)->in('Feature');

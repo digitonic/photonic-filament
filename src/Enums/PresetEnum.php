@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\MediaTonic\Filament\Enums;
+namespace Digitonic\Photonic\Filament\Enums;
 
 use Filament\Support\Contracts\HasLabel;
 

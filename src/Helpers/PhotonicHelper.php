@@ -1,19 +1,20 @@
 <?php
 
-use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
+use Digitonic\Photonic\Filament\Enums\PresetEnum;
+use Digitonic\Photonic\Filament\Models\Media;
 
-if (! function_exists('mediatonic_asset')) {
+if (! function_exists('photonic_asset')) {
     /**
      * Parse and return a URL structure that should point to an uploaded asset.
      */
-    function mediatonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string
+    function photonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string
     {
         if ($filename === '') {
             return null;
         }
 
-        $cdn = rtrim((string) config('mediatonic-filament.cdn_endpoint'), '/');
-        $site = trim((string) config('mediatonic-filament.site_uuid'), '/');
+        $cdn = rtrim((string) config('photonic-filament.cdn_endpoint'), '/');
+        $site = trim((string) config('photonic-filament.site_uuid'), '/');
         $presetSegment = trim($preset, '/');
 
         if (strtolower($presetSegment) === PresetEnum::ORIGINAL->value) {
@@ -40,7 +41,7 @@ if (! function_exists('mediatonic_asset')) {
     }
 }
 
-if (! function_exists('mediatonic_asset_by_id')) {
+if (! function_exists('photonic_asset_by_id')) {
     /**
      * Get the CDN URL for a media asset by its ID.
      * This function caches the result to avoid repeated database queries.
@@ -50,19 +51,20 @@ if (! function_exists('mediatonic_asset_by_id')) {
      * @param  int  $cacheTtl  Cache duration in seconds (default: 3600 = 1 hour)
      * @return string|null The CDN URL or null if media not found
      */
-    function mediatonic_asset_by_id(int $mediaId, string $preset = 'original', int $cacheTtl = 3600): ?string
+    function photonic_asset_by_id(int $mediaId, string $preset = 'original', int $cacheTtl = 3600): ?string
     {
-        $cacheKey = "mediatonic_asset_{$mediaId}_{$preset}";
+        $cacheKey = "photonic_asset_{$mediaId}_{$preset}";
 
         return cache()->remember($cacheKey, $cacheTtl, function () use ($mediaId, $preset) {
-            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+            /** @var class-string<Media> $mediaModelClass */
+            $mediaModelClass = config('photonic-filament.media_model', Media::class);
             $media = $mediaModelClass::find($mediaId);
 
             if (! $media) {
                 return null;
             }
 
-            return mediatonic_asset(
+            return photonic_asset(
                 filename: $media->filename,
                 assetUuid: $media->asset_uuid,
                 preset: $preset
@@ -71,7 +73,7 @@ if (! function_exists('mediatonic_asset_by_id')) {
     }
 }
 
-if (! function_exists('mediatonic_media_by_id')) {
+if (! function_exists('photonic_media_by_id')) {
     /**
      * Get the full media model by its ID with caching.
      * This is useful when you need access to metadata (alt, title, description, caption).
@@ -79,43 +81,45 @@ if (! function_exists('mediatonic_media_by_id')) {
      * @param  int  $mediaId  The ID of the media record
      * @param  int  $cacheTtl  Cache duration in seconds (default: 3600 = 1 hour)
      */
-    function mediatonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?\Digitonic\MediaTonic\Filament\Models\Media
+    function photonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?Media
     {
-        $cacheKey = "mediatonic_media_{$mediaId}";
+        $cacheKey = "photonic_media_{$mediaId}";
 
         return cache()->remember($cacheKey, $cacheTtl, function () use ($mediaId) {
-            $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+            /** @var class-string<Media> $mediaModelClass */
+            $mediaModelClass = config('photonic-filament.media_model', Media::class);
 
             return $mediaModelClass::find($mediaId);
         });
     }
 }
 
-if (! function_exists('forget_mediatonic_cache')) {
+if (! function_exists('forget_photonic_cache')) {
     /**
      * Clear the cached data for a specific media ID.
      * Call this when updating or deleting media records.
      *
      * @param  int  $mediaId  The ID of the media record
      */
-    function forget_mediatonic_cache(int $mediaId): void
+    function forget_photonic_cache(int $mediaId): void
     {
         // Clear the media model cache
-        cache()->forget("mediatonic_media_{$mediaId}");
+        cache()->forget("photonic_media_{$mediaId}");
 
         // Clear all preset URL caches for this media
         // Note: We can't know all presets used, so we clear common ones
         $commonPresets = ['original', 'thumbnail', 'featured', 'banner', 'small', 'medium', 'large'];
         foreach ($commonPresets as $preset) {
-            cache()->forget("mediatonic_asset_{$mediaId}_{$preset}");
+            cache()->forget("photonic_asset_{$mediaId}_{$preset}");
         }
     }
 }
 
-if (! function_exists('get_mediatonic_table_name')) {
-    function get_mediatonic_table_name(): string
+if (! function_exists('get_photonic_table_name')) {
+    function get_photonic_table_name(): string
     {
-        $model = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+        /** @var class-string<Media> $model */
+        $model = config('photonic-filament.media_model', Media::class);
 
         return (new $model)->getTable();
     }

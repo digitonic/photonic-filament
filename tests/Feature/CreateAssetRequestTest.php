@@ -1,11 +1,11 @@
 <?php
 
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\API;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests\CreateAsset;
 use Saloon\Data\MultipartValue;
 
 it('builds multipart body with site uuid and key field', function () {
-    config()->set('mediatonic-filament.site_uuid', 'site-xyz');
+    config()->set('photonic-filament.site_uuid', 'site-xyz');
 
     $api = new API;
     $request = new CreateAsset(

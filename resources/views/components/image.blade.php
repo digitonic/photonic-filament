@@ -1,4 +1,4 @@
-@use(Digitonic\MediaTonic\Filament\Enums\PresetEnum)
+@use(Digitonic\\Photonic\\Filament\\Enums\\PresetEnum)
 
 @props([
     'preset' => PresetEnum::ORIGINAL->value,
@@ -10,7 +10,7 @@
     if($media === null) {
         return;
     }
-    $src = mediatonic_asset(
+    $src = photonic_asset(
             filename:  $media->filename,
             assetUuid: $media->asset_uuid,
             preset: $preset

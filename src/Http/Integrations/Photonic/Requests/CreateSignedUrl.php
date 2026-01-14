@@ -1,8 +1,8 @@
 <?php
 
-namespace Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests;
+namespace Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests;
 
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\API;
 use Saloon\Contracts\Body\HasBody;
 use Saloon\Data\MultipartValue;
 use Saloon\Enums\Method;
@@ -40,8 +40,10 @@ class CreateSignedUrl extends Request implements HasBody
      */
     public function defaultBody(): array
     {
+        $siteUuid = $this->siteId ?? config('photonic-filament.site_uuid');
+
         return [
-            new MultipartValue('site_uuid', (string) ($this->siteId ?? config('mediatonic-filament.site_uuid'))),
+            new MultipartValue('site_uuid', (string) $siteUuid),
             new MultipartValue('filename', $this->fileName),
             new MultipartValue('content_type', $this->contentType ?? 'application/octet-stream'),
         ];

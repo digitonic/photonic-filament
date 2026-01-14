@@ -1,16 +1,17 @@
 {
-  "name": "digitonic/mediatonic-filament",
-  "description": "The MediaTonic Field is a custom input component designed specifically for ingesting pictures and returning an appropriate CDN link for them",
+  "name": "digitonic/photonic-filament",
+  "description": "The Photonic Field is a custom input component designed specifically for ingesting pictures and returning an appropriate CDN link for them",
   "keywords": [
     "laravel",
     "filament"
   ],
-  "homepage": "https://github.com/digitonic/mediatonic-filament",
+  "homepage": "https://github.com/digitonic/photonic-filament",
   "license": "MIT",
   "authors": [
   ],
   "require": {
     "php": "^8.2|^8.3|^8.4",
+    "ext-fileinfo": "*",
     "filament/filament": "^4.0",
     "saloonphp/saloon": "^3.0",
     "spatie/laravel-package-tools": "^1.92"
@@ -27,21 +28,21 @@
   },
   "autoload": {
     "psr-4": {
-      "Digitonic\\MediaTonic\\Filament\\": "src"
+      "Digitonic\\Photonic\\Filament\\": "src"
     },
     "files": [
-      "src/Helpers/MediaTonicHelper.php"
+      "src/Helpers/PhotonicHelper.php"
     ]
   },
   "autoload-dev": {
     "psr-4": {
-      "Digitonic\\MediaTonic\\Filament\\Tests\\": "tests"
+      "Digitonic\\Photonic\\Filament\\Tests\\": "tests"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Digitonic\\MediaTonic\\Filament\\MediaTonicServiceProvider"
+        "Digitonic\\Photonic\\Filament\\PhotonicServiceProvider"
       ]
     }
   },
@@ -55,7 +56,7 @@
     "pest": "vendor/bin/pest",
     "pest-ci": "vendor/bin/pest",
     "stan": "vendor/bin/phpstan analyse src --memory-limit=1G",
-    "stan-ci": "vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=1G",
+    "stan-ci": "vendor/bin/phpstan analyse src --no-progress --error-format=github --memory-limit=1G",
     "cov": "herd coverage ./vendor/bin/pest --coverage",
     "test": [
       "@pint",

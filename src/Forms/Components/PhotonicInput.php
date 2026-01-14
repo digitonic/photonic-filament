@@ -1,14 +1,12 @@
 <?php
 
-namespace Digitonic\MediaTonic\Filament\Forms\Components;
+namespace Digitonic\Photonic\Filament\Forms\Components;
 
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
-use Digitonic\MediaTonic\Filament\Services\MediaUploadService;
+use Digitonic\Photonic\Filament\Services\MediaUploadService;
 use Filament\Forms\Components\FileUpload;
-use Illuminate\Database\Eloquent\Model;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class MediaTonicInput extends FileUpload
+class PhotonicInput extends FileUpload
 {
     /**
      * Whether to return the media ID instead of filename.
@@ -25,14 +23,14 @@ class MediaTonicInput extends FileUpload
         $this->multiple();
         $this->previewable(false);
 
-        // Intercept the save process to send the file to the Mediatonic API and
+        // Intercept the save process to send the file to the Photonic API and
         // store the returned filename in the field state / database.
         $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string|int {
-            $endpoint = config('mediatonic-filament.endpoint');
-            $responseKey = config('mediatonic-filament.response_key', 'filename');
+            $endpoint = config('photonic-filament.endpoint');
+            $responseKey = config('photonic-filament.response_key', 'filename');
 
             if (blank($endpoint)) {
-                throw new \RuntimeException('Endpoint is not configured. Set mediatonic-filament.endpoint in your config.');
+                throw new \RuntimeException('Endpoint is not configured. Set photonic-filament.endpoint in your config.');
             }
 
             $modelInstance = null;

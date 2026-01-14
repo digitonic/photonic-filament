@@ -1,11 +1,11 @@
 <?php
 
-namespace Digitonic\MediaTonic\Filament\Services;
+namespace Digitonic\Photonic\Filament\Services;
 
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateAsset;
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\CreateSignedUrl;
-use Digitonic\MediaTonic\Filament\Models\Media;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\API;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests\CreateAsset;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests\CreateSignedUrl;
+use Digitonic\Photonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -22,9 +22,9 @@ class MediaUploadService
      */
     public function upload($file, array $options = []): Media
     {
-        $endpoint = config('mediatonic-filament.endpoint');
+        $endpoint = config('photonic-filament.endpoint');
         if (blank($endpoint)) {
-            throw new \RuntimeException('Mediatonic endpoint is not configured. Set mediatonic-filament.endpoint.');
+            throw new \RuntimeException('Photonic endpoint is not configured. Set photonic-filament.endpoint.');
         }
 
         $model = $options['model'] ?? null;
@@ -38,7 +38,7 @@ class MediaUploadService
 
         // Step 1: Request a signed URL from the API
         $signedUrlRequest = new CreateSignedUrl(
-            siteId: $options['site_uuid'] ?? config('mediatonic-filament.site_uuid'),
+            siteId: $options['site_uuid'] ?? config('photonic-filament.site_uuid'),
             fileName: $originalName,
             contentType: $contentType,
         );
@@ -48,7 +48,7 @@ class MediaUploadService
         $signedUrlData = $signedUrlResponse->json() ?? [];
 
         if (empty($signedUrlData['url']) || empty($signedUrlData['key'])) {
-            throw new \RuntimeException('Failed to get signed URL from Mediatonic API. Response: '.json_encode($signedUrlResponse->json() . ' response context: ' . json_encode($signedUrlResponse)));
+            throw new \RuntimeException('Failed to get signed URL from Photonic API. Response: '.json_encode($signedUrlResponse->json().' response context: '.json_encode($signedUrlResponse)));
         }
 
         $signedUrl = $signedUrlData['url'];
@@ -81,7 +81,7 @@ class MediaUploadService
 
         // Step 3: Create the asset record with the S3 key
         $createAssetRequest = new CreateAsset(
-            siteId: $options['site_uuid'] ?? config('mediatonic-filament.site_uuid'),
+            siteId: $options['site_uuid'] ?? config('photonic-filament.site_uuid'),
             key: $s3Key,
             fileName: $originalName,
             alt: $options['alt'] ?? null,
@@ -93,12 +93,12 @@ class MediaUploadService
         $response = $api->send($createAssetRequest);
         $json = $response->json()['data'] ?? [];
 
-        $responseKey = config('mediatonic-filament.response_key', 'original_filename');
+        $responseKey = config('photonic-filament.response_key', 'original_filename');
         $filename = $json[$responseKey] ?? $json['filename'] ?? $originalName;
         $assetUuid = $json['uuid'] ?? null;
 
         /** @var class-string<Media> $mediaModelClass */
-        $mediaModelClass = config('mediatonic-filament.media_model', Media::class);
+        $mediaModelClass = config('photonic-filament.media_model', Media::class);
 
         $attributes = [
             'asset_uuid' => $assetUuid,

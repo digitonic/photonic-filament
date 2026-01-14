@@ -1,11 +1,11 @@
 <?php
 
-namespace Digitonic\MediaTonic\Filament\Forms\Components;
+namespace Digitonic\Photonic\Filament\Forms\Components;
 
-use Digitonic\MediaTonic\Filament\Enums\PresetEnum;
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\API;
-use Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic\Requests\DeleteAsset;
-use Digitonic\MediaTonic\Filament\Models\Media;
+use Digitonic\Photonic\Filament\Enums\PresetEnum;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\API;
+use Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests\DeleteAsset;
+use Digitonic\Photonic\Filament\Models\Media;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
@@ -20,15 +20,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
-class MediaTonicImageField extends Group
+class PhotonicImageField extends Group
 {
-    protected string $relationName = 'mediaTonicMedia';
+    protected string $relationName = 'photonicMedia';
 
     /**
      * Field key used to mount the upload "dummy" state.
      * We do not dehydrate this field to DB; it only triggers the upload.
      */
-    protected string $uploadFieldName = 'mediatonic_upload';
+    protected string $uploadFieldName = 'photonic_upload';
 
     /**
      * CDN preset path segment used for preview URL (e.g. 'original', 'featured').
@@ -57,9 +57,9 @@ class MediaTonicImageField extends Group
     protected ?string $mediaIdField = null;
 
     /**
-     * Reference to the MediatonicInput component for method forwarding.
+     * Reference to the PhotonicInput component for method forwarding.
      */
-    protected ?MediatonicInput $inputComponent = null;
+    protected ?PhotonicInput $inputComponent = null;
 
     /**
      * Callbacks to apply to the input component after it's created.
@@ -80,10 +80,10 @@ class MediaTonicImageField extends Group
      */
     protected function buildRelationModeSchema(): array
     {
-        // Create the input componentUsesMediaTonic and store reference
-        $this->inputComponent = MediaTonicInput::make($this->uploadFieldName)
+        // Create the input component and store reference
+        $this->inputComponent = PhotonicInput::make($this->uploadFieldName)
             ->label('Upload Your Media')
-            ->helperText('Media will be uploaded to MediaTonic')
+            ->helperText('Media will be uploaded to Photonic')
             // Avoid saving uploader value to model
             ->dehydrated(false)
             // single file for this helper – users can still override by extending later if needed
@@ -120,7 +120,7 @@ class MediaTonicImageField extends Group
                     }
 
                     /** @var view-string $viewName */
-                    $viewName = 'mediatonic-filament::components.image';
+                    $viewName = 'photonic-filament::components.image';
 
                     $html = view($viewName, [
                         'filename' => $filename,
@@ -176,7 +176,7 @@ class MediaTonicImageField extends Group
 
             // 3) Remove / replace action
             Actions::make([
-                Action::make('removeMediatonicImage')
+                Action::make('removePhotonicImage')
                     ->label(__('Remove Image'))
                     ->color('danger')
                     ->requiresConfirmation()
@@ -217,7 +217,7 @@ class MediaTonicImageField extends Group
     protected function buildIdModeSchema(): array
     {
         $mediaIdField = $this->mediaIdField;
-        $mediaModelClass = config('mediatonic-filament.media_model', \Digitonic\MediaTonic\Filament\Models\Media::class);
+        $mediaModelClass = config('photonic-filament.media_model', Media::class);
 
         $extractMediaId = function (mixed $value): ?int {
             if (is_null($value)) {
@@ -254,9 +254,9 @@ class MediaTonicImageField extends Group
         // The actual media ID will be stored via a Hidden field
         $uploadFieldName = $mediaIdField.'_upload';
 
-        $this->inputComponent = MediaTonicInput::make($mediaIdField)
+        $this->inputComponent = PhotonicInput::make($mediaIdField)
             ->label('Upload Your Media')
-            ->helperText('Media will be uploaded to MediaTonic')
+            ->helperText('Media will be uploaded to Photonic')
             ->returnId()
             ->multiple(false)
             ->formatStateUsing(function ($state, Set $set) use ($mediaModelClass, $mediaIdField, $strRandom) {
@@ -303,7 +303,7 @@ class MediaTonicImageField extends Group
                     }
 
                     /** @var view-string $viewName */
-                    $viewName = 'mediatonic-filament::components.image';
+                    $viewName = 'photonic-filament::components.image';
 
                     $html = view($viewName, [
                         'filename' => $filename,
@@ -393,7 +393,7 @@ class MediaTonicImageField extends Group
 
             // Remove action
             Actions::make([
-                Action::make('removeMediatonicImage')
+                Action::make('removePhotonicImage')
                     ->label(__('Remove Image'))
                     ->color('danger')
                     ->requiresConfirmation()
@@ -490,27 +490,11 @@ class MediaTonicImageField extends Group
     }
 
     /**
-     * Forward method calls to the underlying MediatonicInput component.
-     *
-     * This magic method allows any standard Filament form component method to be called
-     * on MediatonicImageField, and it will be automatically forwarded to the internal
-     * MediatonicInput upload component. This includes methods like:
-     *
-     * - ->visible() / ->hidden()
-     * - ->required() / ->requiredIf() / ->requiredWith()
-     * - ->disabled() / ->readonly()
-     * - ->default() / ->placeholder()
-     * - ->helperText() / ->hint() / ->hintIcon()
-     * - And any other Filament form component method
+     * Forward method calls to the underlying PhotonicInput component.
      *
      * Example:
-     *   MediatonicImageField::make('image')
-     *       ->required()
-     *       ->visible(fn($get) => $get('needs_image'))
-     *       ->helperText('Upload a high-quality image');
-     *
-     * The method calls are either applied immediately if the component is set up,
-     * or queued to be applied during the setUp() phase if called before initialization.
+     *   PhotonicImageField::make('image')
+     *       ->required();
      */
     public function __call(string $method, array $parameters): mixed
     {

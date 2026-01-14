@@ -1,6 +1,6 @@
 <?php
 
-namespace Digitonic\MediaTonic\Filament\Http\Integrations\MediaTonic;
+namespace Digitonic\Photonic\Filament\Http\Integrations\Photonic;
 
 use Saloon\Contracts\Authenticator;
 use Saloon\Http\Auth\TokenAuthenticator;
@@ -16,7 +16,7 @@ class API extends Connector
      */
     public function resolveBaseUrl(): string
     {
-        return config('mediatonic-filament.endpoint');
+        return (string) config('photonic-filament.endpoint');
     }
 
     /**
@@ -33,6 +33,6 @@ class API extends Connector
 
     protected function defaultAuth(): ?Authenticator
     {
-        return new TokenAuthenticator(config('mediatonic-filament.api_key'));
+        return new TokenAuthenticator((string) config('photonic-filament.api_key'));
     }
 }

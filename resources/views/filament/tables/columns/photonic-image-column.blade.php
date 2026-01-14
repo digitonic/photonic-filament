@@ -10,8 +10,8 @@
             return;
         }
 
-        $cdnUrl = mediatonic_asset($relatedModel->filename, $relatedModel->asset_uuid);
+        $cdnUrl = photonic_asset($relatedModel->filename, $relatedModel->asset_uuid);
     @endphp
 
-    <img src="{{ $cdnUrl }}" alt="{{ $relatedModel->alt_text ?? 'Image' }}" class="max-w-full h-auto rounded">
+    <img src="{{ $cdnUrl }}" alt="{{ $relatedModel->alt ?? 'Image' }}" class="max-w-full h-auto rounded">
 </div>

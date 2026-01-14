@@ -1,0 +1,34 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(get_photonic_table_name(), function (Blueprint $table) {
+            $table->id();
+            $table->string('asset_uuid', 36)->index();
+            // Polymorphic relation to the owning model (nullable for standalone media records)
+            $table->string('model_type')->nullable();
+            $table->unsignedBigInteger('model_id')->nullable();
+            $table->string('filename');
+            $table->string('alt')->nullable();
+            $table->string('title')->nullable();
+            $table->text('description')->nullable();
+            $table->text('caption')->nullable();
+            $table->json('config')->nullable();
+            $table->timestamps();
+
+            $table->index(['model_type', 'model_id']);
+            $table->unique(['asset_uuid', 'model_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(get_photonic_table_name());
+    }
+};
