@@ -48,7 +48,7 @@ class MediaUploadService
         $signedUrlData = $signedUrlResponse->json()['data'] ?? [];
 
         if (empty($signedUrlData['url']) || empty($signedUrlData['key'])) {
-            throw new \RuntimeException('Failed to get signed URL from Mediatonic API. Response: '.json_encode($signedUrlData));
+            throw new \RuntimeException('Failed to get signed URL from Mediatonic API. Response: '.json_encode($signedUrlResponse->json() . ' response context: ' . json_encode($signedUrlResponse)));
         }
 
         $signedUrl = $signedUrlData['url'];
