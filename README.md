@@ -3,10 +3,6 @@
 A Filament 4 form component package for Laravel 12 that uploads image assets to a third‑party Mediatonic API, stores metadata in your database, and renders CDN image URLs. It does not persist the uploaded file locally.
 We intend this package to be used with the MediaTonic Server API. No support will be given for other APIs, or reverse engineering any of the calls done here.
 
-<p align="center">
-<img src="https://img.shields.io/github/actions/workflow/status/digitonic/mediatonic-filament/.github%2Fworkflows%2Ftests.yml?style=for-the-badge&logo=laravel&logoColor=white" alt="workflow build status">
-</p>
-
 ## Features
 
 - Uploads directly to a remote API (via Saloon) on form save.
