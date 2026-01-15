@@ -1,7 +1,5 @@
-@use(Digitonic\\Photonic\\Filament\\Enums\\PresetEnum)
-
 @props([
-    'preset' => PresetEnum::ORIGINAL->value,
+    'preset' => Digitonic\Photonic\Filament\Enums\PresetEnum::ORIGINAL->value,
     'class' => 'object-cover w-auto',
     'media' => null,
 ])
