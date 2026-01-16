@@ -7,8 +7,7 @@ We intend this package to be used with the Photonic Server API.
 ## Features
 
 - Optionally records each upload to a dedicated `photonic` table.
-- Includes form components:
-  - `PhotonicInput` – raw upload field (extends Filament's `FileUpload`).
+- Includes form component:
   - `PhotonicImageField` – composite helper (upload + preview + delete + meta info).
 - Blade component `<x-photonic-filament::image>` for rendering CDN URLs.
 - Helpers:
@@ -62,15 +61,7 @@ class Article extends Model
 
 ## Components
 
-### 1. `PhotonicInput`
-
-```php
-use Digitonic\Photonic\Filament\Forms\Components\PhotonicInput;
-
-PhotonicInput::make('image_filename');
-```
-
-### 2. `PhotonicImageField`
+### `PhotonicImageField`
 
 ```php
 use Digitonic\Photonic\Filament\Forms\Components\PhotonicImageField;
