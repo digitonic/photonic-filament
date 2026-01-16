@@ -19,9 +19,14 @@ We intend this package to be used with the Photonic Server API.
 
 ```bash
 composer require digitonic/photonic-filament
+php artisan photonic-filament:install
 ```
 
-Publish assets:
+The installer will prompt you for the required Photonic values and will update **both** your `.env` and `.env.example`.
+
+### Optional: publish assets
+
+If you want to customize the config / views, you can still publish them:
 
 ```bash
 php artisan vendor:publish --tag=photonic-filament-config
