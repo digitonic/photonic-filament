@@ -4,9 +4,8 @@ use Digitonic\Photonic\Filament\Models\Media;
 
 return [
     // Base URL of the third-party API.
-    'endpoint' => env('PHOTONIC_ENDPOINT', 'https://photonic.test/api/v1'),
-    'cdn_endpoint' => env('PHOTONIC_CDN_ENDPOINT', 'https://minio.herd.test/photonic'),
-
+    'endpoint' => env('PHOTONIC_ENDPOINT'),
+    'cdn_endpoint' => env('PHOTONIC_CDN_ENDPOINT'),
     'site_uuid' => env('PHOTONIC_SITE_UUID'),
     'api_key' => env('PHOTONIC_API_KEY'),
 
