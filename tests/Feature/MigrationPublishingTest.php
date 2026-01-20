@@ -22,4 +22,3 @@ it('publishes a timestamped migration filename', function () {
     expect($published)->toHaveCount(1);
     expect(basename($published[0]))->toMatch('/^\d{4}_\d{2}_\d{2}_\d{6}_create_photonic_table\.php$/');
 });
-

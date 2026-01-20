@@ -17,4 +17,4 @@
     $altText = $media->alt ?? $media->filename;
 @endphp
 
-<img src="{{ $src }}" alt="{{ $altText }}" {{ $attributes->except('class') }} class="{{ $class }}" />
+<img fetchpriority=high src="{{ $src }}" alt="{{ $altText }}" {{ $attributes->except('class') }} class="{{ $class }}" />

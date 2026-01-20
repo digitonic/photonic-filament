@@ -23,7 +23,7 @@ class InstallCommand extends Command
         $force = (bool) $this->option('force');
         $defaults = config('photonic-filament');
 
-        $editor = new EnvFileEditor();
+        $editor = new EnvFileEditor;
         $envPath = base_path('.env');
 
         $values = [
@@ -44,6 +44,7 @@ class InstallCommand extends Command
 
         if (! empty($missingRequired)) {
             $this->error('Missing required values: '.implode(', ', $missingRequired));
+
             return self::FAILURE;
         }
 

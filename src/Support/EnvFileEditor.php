@@ -45,6 +45,7 @@ class EnvFileEditor
             if (str_starts_with($raw, '"') && str_ends_with($raw, '"')) {
                 $raw = substr($raw, 1, -1);
                 $raw = str_replace('\\"', '"', $raw);
+
                 return $raw;
             }
 
@@ -72,7 +73,7 @@ class EnvFileEditor
                 throw new RuntimeException("Env file not found at [$path].");
             }
 
-            file_put_contents($path, "");
+            file_put_contents($path, '');
         }
 
         $contents = file_get_contents($path);
@@ -106,6 +107,7 @@ class EnvFileEditor
 
             if (! $force) {
                 unset($remaining[$key]);
+
                 continue;
             }
 
@@ -143,6 +145,7 @@ class EnvFileEditor
         // Quote if contains spaces or env-special characters.
         if ($value === '' || preg_match('/\s|#|"|\'|=/', $value)) {
             $escaped = str_replace('"', '\\"', $value);
+
             return '"'.$escaped.'"';
         }
 

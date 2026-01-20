@@ -27,6 +27,8 @@ class PhotonicServiceProvider extends PackageServiceProvider
             $this->package->basePath('/../resources/views') => resource_path('views/vendor/photonic-filament'),
         ], 'photonic-filament-views');
 
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'photonic-filament');
+
         parent::bootingPackage();
     }
 }

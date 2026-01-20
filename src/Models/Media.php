@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Media extends Model
 {
     protected $table = 'photonic';
+
     protected $guarded = [];
 
     public function casts(): array
