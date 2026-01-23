@@ -13,7 +13,8 @@ class PhotonicServiceProvider extends PackageServiceProvider
         $package
             ->name('photonic-filament')
             ->hasCommand(InstallCommand::class)
-            ->hasMigration('create_photonic_table');
+            ->hasMigration('create_photonic_table')
+            ->runsMigrations();
     }
 
     public function bootingPackage(): void
