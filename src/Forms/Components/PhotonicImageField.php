@@ -14,6 +14,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Database\Eloquent\Model;
@@ -82,130 +83,169 @@ class PhotonicImageField extends Group
     {
         // Create the input component and store reference
         $this->inputComponent = PhotonicInput::make($this->uploadFieldName)
-            ->label('Upload Your Media')
-            ->helperText('Media will be uploaded to Photonic')
+            ->label('Upload Media')
+            ->helperText('Select an image to upload to Photonic CDN')
             // Avoid saving uploader value to model
             ->dehydrated(false)
             // single file for this helper – users can still override by extending later if needed
             ->multiple(false)
-            // Hide uploader if a record already has media via relation
-            ->hidden(fn (?Model $record): bool => (bool) ($record->{$this->relationName} ?? null))
             // Ensure it records to media table by default so relation can exist
-            ->columnSpan([
-                'sm' => 2,
-            ]);
+            ->columnSpanFull();
 
         // Apply any callbacks that were queued before setUp
         foreach ($this->inputCallbacks as $callback) {
             $callback($this->inputComponent);
         }
 
+        $hasMedia = fn (?Model $record): bool => (bool) ($record?->{$this->relationName} ?? null);
+
         return [
-            // 1) Uploader - only visible when no related media exists.
-            $this->inputComponent,
-
-            // 2) Preview placeholder - only visible when relation exists
-            TextEntry::make('img_preview'.'_preview_'.Str::random(2))
-                ->label('Image Preview')
-                ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? false))
-                ->state(function (?Model $record) {
-                    $media = $record->{$this->relationName} ?? null;
-                    if (! $record || ! $media) {
-                        return 'No image available';
-                    }
-
-                    $filename = $media->filename ?? null;
-                    if (! $filename) {
-                        return 'No image available';
-                    }
-
-                    /** @var view-string $viewName */
-                    $viewName = 'photonic-filament::components.image';
-
-                    $html = view($viewName, [
-                        'filename' => $filename,
-                        'preset' => $this->previewPreset,
-                        'class' => $this->previewClasses,
-                        'alt' => $media->alt ?? $filename,
-                        'media' => $media,
-                    ])->render();
-
-                    return new HtmlString($html);
-                })
-                ->extraAttributes(['class' => 'prose'])
-                ->columnSpanFull(),
-
-            Section::make('Image Details')
-                ->visible(fn (?Model $record): bool => ($record && $record->{$this->relationName}) ? ($record->{$this->relationName}->exists()) : false)
-                ->live()
-                ->relationship($this->relationName)
+            Section::make('Photonic Media')
+                ->description('Manage your image upload and metadata')
+                ->collapsible()
+                ->collapsed()
                 ->schema([
-                    // Metadata fields for new uploads
-                    TextInput::make('alt')
-                        ->label('Alt Text')
-                        ->maxLength(255)
-                        ->helperText('Alternative text for the image (for accessibility)')
-                        ->columnSpan([
-                            'sm' => 2,
+                    Tabs::make('photonic_tabs')
+                        ->tabs([
+                            // Tab 1: Upload / Preview
+                            Tabs\Tab::make('Media')
+                                ->icon('heroicon-o-photo')
+                                ->schema([
+                            // Show uploader when no media exists
+                            Group::make([
+                                $this->inputComponent,
+                            ])
+                                ->visible(fn (?Model $record): bool => !$hasMedia($record))
+                                ->columnSpanFull(),
+
+                            // Show preview when media exists
+                            Group::make([
+                                TextEntry::make('img_preview_'.'_preview_'.Str::random(2))
+                                    ->label('Current Image')
+                                    ->state(function (?Model $record) {
+                                        $media = $record->{$this->relationName} ?? null;
+                                        if (! $record || ! $media) {
+                                            return 'No image available';
+                                        }
+
+                                        $filename = $media->filename ?? null;
+                                        if (! $filename) {
+                                            return 'No image available';
+                                        }
+
+                                        /** @var view-string $viewName */
+                                        $viewName = 'photonic-filament::components.image';
+
+                                        $html = view($viewName, [
+                                            'filename' => $filename,
+                                            'preset' => $this->previewPreset,
+                                            'class' => $this->previewClasses,
+                                            'alt' => $media->alt ?? $filename,
+                                            'media' => $media,
+                                        ])->render();
+
+                                        return new HtmlString($html);
+                                    })
+                                    ->extraAttributes(['class' => 'prose max-w-none'])
+                                    ->columnSpanFull(),
+                            ])
+                                ->visible($hasMedia)
+                                ->columnSpanFull(),
                         ]),
 
-                    TextInput::make('title')
-                        ->label('Title')
-                        ->maxLength(255)
-                        ->helperText('Title of the image')
-                        ->columnSpan([
-                            'sm' => 2,
+                    // Tab 2: Image Details
+                    Tabs\Tab::make('Details')
+                        ->icon('heroicon-o-document-text')
+                        ->visible($hasMedia)
+                        ->schema([
+                            Section::make()
+                                ->schema([
+                                    TextInput::make('alt')
+                                        ->label('Alt Text')
+                                        ->maxLength(255)
+                                        ->helperText('Describe the image for accessibility (screen readers)')
+                                        ->columnSpan(['sm' => 2]),
+
+                                    TextInput::make('title')
+                                        ->label('Title')
+                                        ->maxLength(255)
+                                        ->helperText('Image title')
+                                        ->columnSpan(['sm' => 2]),
+
+                                    Textarea::make('description')
+                                        ->label('Description')
+                                        ->rows(4)
+                                        ->helperText('Detailed description of the image content')
+                                        ->columnSpanFull(),
+
+                                    Textarea::make('caption')
+                                        ->label('Caption')
+                                        ->rows(2)
+                                        ->helperText('Caption to display with the image')
+                                        ->columnSpanFull(),
+                                ])
+                                ->relationship($this->relationName)
+                                ->columnSpanFull(),
                         ]),
 
-                    Textarea::make('description')
-                        ->label('Description')
-                        ->rows(3)
-                        ->helperText('Detailed description of the image')
-                        ->columnSpan([
-                            'sm' => 2,
+                    // Tab 3: Actions
+                    Tabs\Tab::make('Actions')
+                        ->icon('heroicon-o-cog-6-tooth')
+                        ->visible(fn (?Model $record): bool => $hasMedia($record) && $this->showRemoveAction)
+                        ->schema([
+                            Section::make()
+                                ->schema([
+                                    Group::make([
+                                        Actions::make([
+                                            Action::make('removePhotonicImage')
+                                                ->label('Delete Image')
+                                                ->color('danger')
+                                                ->icon('heroicon-o-trash')
+                                                ->requiresConfirmation()
+                                                ->modalHeading('Delete Image')
+                                                ->modalDescription('Are you sure you want to delete this image? This action cannot be undone and will remove the image from the CDN.')
+                                                ->modalSubmitActionLabel('Yes, delete it')
+                                                ->action(function (?Model $record, $livewire) {
+                                                    if ($record && $record->{$this->relationName}) {
+                                                        // Send the API call to remove the asset
+                                                        $api = new API;
+                                                        $request = new DeleteAsset($record->{$this->relationName}->asset_uuid);
+                                                        $response = $api->send($request);
+
+                                                        if ($response->status() === 200) {
+                                                            // Delete the related media record
+                                                            $relation = $record->{$this->relationName}();
+                                                            if (method_exists($relation, 'delete')) {
+                                                                $relation->delete();
+                                                            } else {
+                                                                // If relation is already loaded as a model instance
+                                                                $record->{$this->relationName}->delete();
+                                                            }
+
+                                                            // Refresh the record and re-render
+                                                            $record->refresh();
+                                                            $livewire->dispatch('$refresh');
+                                                        }
+                                                    }
+                                                }),
+                                        ])->columnSpanFull(),
+                                    ])->columnSpanFull(),
+
+                                    Group::make([
+                                        TextEntry::make('info')
+                                            ->label('')
+                                            ->state('Deleting the image will permanently remove it from the CDN.')
+                                            ->color('gray')
+                                            ->columnSpanFull(),
+                                    ])->columnSpanFull(),
+                                ])
+                                ->columnSpanFull(),
                         ]),
-
-                    Textarea::make('caption')
-                        ->label('Caption')
-                        ->rows(2)
-                        ->helperText('Caption to display with the image')
-                        ->columnSpan([
-                            'sm' => 2,
-                        ]),
-                ]),
-
-            // 3) Remove / replace action
-            Actions::make([
-                Action::make('removePhotonicImage')
-                    ->label(__('Remove Image'))
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->hidden(fn (?Model $record): bool => ! ($record->{$this->relationName} ?? null))
-                    ->action(function (?Model $record, $livewire) {
-                        if ($record && $record->{$this->relationName}) {
-                            // Send the API call to remove the asset
-                            $api = new API;
-                            $request = new DeleteAsset($record->{$this->relationName}->asset_uuid);
-                            $response = $api->send($request);
-
-                            if ($response->status() === 200) {
-                                // Delete the related media record
-                                $relation = $record->{$this->relationName}();
-                                if (method_exists($relation, 'delete')) {
-                                    $relation->delete();
-                                } else {
-                                    // If relation is already loaded as a model instance
-                                    $record->{$this->relationName}->delete();
-                                }
-
-                                // Refresh the record and re-render
-                                $record->refresh();
-                                $livewire->dispatch('$refresh');
-                            }
-                        }
-                    }),
-            ])->columnSpanFull()
-                ->visible($this->showRemoveAction),
+                    ])
+                    ->columnSpanFull()
+                    ->contained(false),
+                ])
+                ->columnSpanFull(),
         ];
     }
 
@@ -255,10 +295,11 @@ class PhotonicImageField extends Group
         $uploadFieldName = $mediaIdField.'_upload';
 
         $this->inputComponent = PhotonicInput::make($mediaIdField)
-            ->label('Upload Your Media')
-            ->helperText('Media will be uploaded to Photonic')
+            ->label('Upload Media')
+            ->helperText('Select an image to upload to Photonic CDN')
             ->returnId()
             ->multiple(false)
+            ->live()
             ->formatStateUsing(function ($state, Set $set) use ($mediaModelClass, $mediaIdField, $strRandom) {
                 // We need to return back the FileName
                 $media = $mediaModelClass::find($state);
@@ -271,155 +312,209 @@ class PhotonicImageField extends Group
 
                 return null;
             })
+            ->afterStateUpdated(function ($state, Set $set) use ($mediaIdField, $strRandom) {
+                // After upload, sync the preview field state
+                if ($state) {
+                    $set($mediaIdField, $state);
+                    $set('img_preview_id_mode_'.$strRandom, $state);
+                }
+            })
             ->dehydrateStateUsing(function ($state) use ($extractMediaId) {
                 return $extractMediaId($state);
             })
-            ->columnSpan(['sm' => 2]);
+            ->columnSpanFull();
 
         // Apply any callbacks that were queued before setUp
         foreach ($this->inputCallbacks as $callback) {
             $callback($this->inputComponent);
         }
 
+        $hasMedia = fn (Get $get): bool => !empty($get($mediaIdField));
+
         return [
-            // Uploader - visible when no media ID exists
-            // When visible, this component uploads and sets the media ID via afterStateUpdated
-            $this->inputComponent,
-
-            // Preview - visible when media ID exists
-            TextEntry::make('img_preview_id_mode_'.$strRandom)
-                ->label('Image Preview')
-                // Hide this if the state is empty
-                ->formatStateUsing(function (Get $get) use ($mediaIdField, $getMediaById) {
-                    $media = $getMediaById($get($mediaIdField));
-
-                    if (! $media) {
-                        return 'No image available';
-                    }
-
-                    $filename = $media->filename ?? null;
-                    if (! $filename) {
-                        return 'No image available';
-                    }
-
-                    /** @var view-string $viewName */
-                    $viewName = 'photonic-filament::components.image';
-
-                    $html = view($viewName, [
-                        'filename' => $filename,
-                        'preset' => $this->previewPreset,
-                        'class' => $this->previewClasses,
-                        'alt' => $media->alt ?? $filename,
-                        'media' => $media,
-                    ])->render();
-
-                    return new HtmlString($html);
-                })
-                ->columnSpanFull(),
-
-            // Image Details Section - manually hydrate/dehydrate since we can't use ->relationship() in ID mode
-            Section::make('Image Details')
-                ->visible(function (Get $get) use ($mediaIdField, $extractMediaId): bool {
-                    $mediaId = $extractMediaId($get($mediaIdField));
-
-                    return ! is_null($mediaId);
-                })
+            Section::make('Photonic Media')
+                ->description('Manage your image upload and metadata')
+                ->collapsible()
+                ->collapsed()
                 ->schema([
-                    TextInput::make('media_alt'.$strRandom)
-                        ->label('Alt Text')
-                        ->maxLength(255)
-                        ->helperText('Alternative text for the image (for accessibility)')
-                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $set('media_alt'.$strRandom, $media?->alt);
-                        })
-                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $media?->update(['alt' => $state]);
+                    Tabs::make('photonic_tabs')
+                        ->tabs([
+                            // Tab 1: Upload / Preview
+                            Tabs\Tab::make('Media')
+                                ->icon('heroicon-o-photo')
+                                ->schema([
+                            // Uploader - visible when no media ID exists
+                            Group::make([
+                                $this->inputComponent,
+                            ])
+                                ->visible(fn (Get $get): bool => !$hasMedia($get))
+                                ->columnSpanFull(),
 
-                            return null; // Don't save to parent model
-                        })
-                        ->columnSpan(['sm' => 2]),
+                            // Preview - visible when media ID exists
+                            Group::make([
+                                TextEntry::make('img_preview_id_mode_'.$strRandom)
+                                    ->label('Current Image')
+                                    ->live()
+                                    ->formatStateUsing(function (Get $get) use ($mediaIdField, $getMediaById) {
+                                        $media = $getMediaById($get($mediaIdField));
 
-                    TextInput::make('media_title'.$strRandom)
-                        ->label('Title')
-                        ->maxLength(255)
-                        ->helperText('Title of the image')
-                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $set('media_title'.$strRandom, $media?->title);
-                        })
-                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $media?->update(['title' => $state]);
+                                        if (! $media) {
+                                            return 'No image available';
+                                        }
 
-                            return null;
-                        })
-                        ->columnSpan(['sm' => 2]),
+                                        $filename = $media->filename ?? null;
+                                        if (! $filename) {
+                                            return 'No image available';
+                                        }
 
-                    Textarea::make('media_description'.$strRandom)
-                        ->label('Description')
-                        ->rows(3)
-                        ->helperText('Detailed description of the image')
-                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $set('media_description'.$strRandom, $media?->description);
-                        })
-                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $media?->update(['description' => $state]);
+                                        /** @var view-string $viewName */
+                                        $viewName = 'photonic-filament::components.image';
 
-                            return null;
-                        })
-                        ->columnSpan(['sm' => 2]),
+                                        $html = view($viewName, [
+                                            'filename' => $filename,
+                                            'preset' => $this->previewPreset,
+                                            'class' => $this->previewClasses,
+                                            'alt' => $media->alt ?? $filename,
+                                            'media' => $media,
+                                        ])->render();
 
-                    Textarea::make('media_caption'.$strRandom)
-                        ->label('Caption')
-                        ->rows(2)
-                        ->helperText('Caption to display with the image')
-                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $set('media_caption'.$strRandom, $media?->caption);
-                        })
-                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
-                            $media = $getMediaById($get($mediaIdField));
-                            $media?->update(['caption' => $state]);
+                                        return new HtmlString($html);
+                                    })
+                                    ->extraAttributes(['class' => 'prose max-w-none'])
+                                    ->columnSpanFull(),
+                            ])
+                                ->visible($hasMedia)
+                                ->columnSpanFull(),
+                        ]),
 
-                            return null;
-                        })
-                        ->columnSpan(['sm' => 2]),
+                    // Tab 2: Image Details
+                    Tabs\Tab::make('Details')
+                        ->icon('heroicon-o-document-text')
+                        ->visible($hasMedia)
+                        ->schema([
+                            Section::make()
+                                ->schema([
+                                    TextInput::make('media_alt'.$strRandom)
+                                        ->label('Alt Text')
+                                        ->maxLength(255)
+                                        ->helperText('Describe the image for accessibility (screen readers)')
+                                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $set('media_alt'.$strRandom, $media?->alt);
+                                        })
+                                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $media?->update(['alt' => $state]);
+
+                                            return null; // Don't save to parent model
+                                        })
+                                        ->columnSpan(['sm' => 2]),
+
+                                    TextInput::make('media_title'.$strRandom)
+                                        ->label('Title')
+                                        ->maxLength(255)
+                                        ->helperText('Image title')
+                                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $set('media_title'.$strRandom, $media?->title);
+                                        })
+                                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $media?->update(['title' => $state]);
+
+                                            return null;
+                                        })
+                                        ->columnSpan(['sm' => 2]),
+
+                                    Textarea::make('media_description'.$strRandom)
+                                        ->label('Description')
+                                        ->rows(4)
+                                        ->helperText('Detailed description of the image content')
+                                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $set('media_description'.$strRandom, $media?->description);
+                                        })
+                                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $media?->update(['description' => $state]);
+
+                                            return null;
+                                        })
+                                        ->columnSpanFull(),
+
+                                    Textarea::make('media_caption'.$strRandom)
+                                        ->label('Caption')
+                                        ->rows(2)
+                                        ->helperText('Caption to display with the image')
+                                        ->afterStateHydrated(function ($set, Get $get) use ($mediaIdField, $getMediaById, $strRandom) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $set('media_caption'.$strRandom, $media?->caption);
+                                        })
+                                        ->dehydrateStateUsing(function ($state, Get $get) use ($mediaIdField, $getMediaById) {
+                                            $media = $getMediaById($get($mediaIdField));
+                                            $media?->update(['caption' => $state]);
+
+                                            return null;
+                                        })
+                                        ->columnSpanFull(),
+                                ])
+                                ->columnSpanFull(),
+                        ]),
+
+                    // Tab 3: Actions
+                    Tabs\Tab::make('Actions')
+                        ->icon('heroicon-o-cog-6-tooth')
+                        ->visible(fn (Get $get): bool => $hasMedia($get) && $this->showRemoveAction)
+                        ->schema([
+                            Section::make()
+                                ->schema([
+                                    Group::make([
+                                        Actions::make([
+                                            Action::make('removePhotonicImage')
+                                                ->label('Delete Image')
+                                                ->color('danger')
+                                                ->icon('heroicon-o-trash')
+                                                ->requiresConfirmation()
+                                                ->modalHeading('Delete Image')
+                                                ->modalDescription('Are you sure you want to delete this image? This action cannot be undone and will remove the image from the CDN.')
+                                                ->modalSubmitActionLabel('Yes, delete it')
+                                                ->action(function (Get $get, $set, $livewire) use ($mediaIdField, $mediaModelClass, $extractMediaId) {
+                                                    $mediaId = $extractMediaId($get($mediaIdField));
+                                                    if ($mediaId) {
+                                                        $media = $mediaModelClass::find($mediaId);
+
+                                                        if ($media) {
+                                                            // Send the API call to remove the asset
+                                                            $api = new API;
+                                                            $request = new DeleteAsset($media->asset_uuid);
+                                                            $response = $api->send($request);
+
+                                                            if ($response->status() === 200) {
+                                                                $media->delete();
+                                                                $set($mediaIdField, null);
+                                                                $livewire->dispatch('$refresh');
+                                                            }
+                                                        }
+                                                    }
+                                                }),
+                                        ])->columnSpanFull(),
+                                    ])->columnSpanFull(),
+
+                                    Group::make([
+                                        TextEntry::make('info')
+                                            ->label('')
+                                            ->state('Deleting the image will permanently remove it from the CDN.')
+                                            ->color('gray')
+                                            ->columnSpanFull(),
+                                    ])->columnSpanFull(),
+                                ])
+                                ->columnSpanFull(),
+                        ]),
+                    ])
+                    ->columnSpanFull()
+                    ->contained(false),
                 ])
                 ->columnSpanFull(),
-
-            // Remove action
-            Actions::make([
-                Action::make('removePhotonicImage')
-                    ->label(__('Remove Image'))
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->hidden(fn (Get $get): bool => empty($get($mediaIdField)))
-                    ->action(function (Get $get, $set, $livewire) use ($mediaIdField, $mediaModelClass, $extractMediaId) {
-                        $mediaId = $extractMediaId($get($mediaIdField));
-                        if ($mediaId) {
-                            $media = $mediaModelClass::find($mediaId);
-
-                            if ($media) {
-                                // Send the API call to remove the asset
-                                $api = new API;
-                                $request = new DeleteAsset($media->asset_uuid);
-                                $response = $api->send($request);
-
-                                if ($response->status() === 200) {
-                                    $media->delete();
-                                    $set($mediaIdField, null);
-                                    $livewire->dispatch('$refresh');
-                                }
-                            }
-                        }
-                    }),
-            ])
-                ->columnSpanFull()
-                ->visible($this->showRemoveAction),
         ];
     }
 
