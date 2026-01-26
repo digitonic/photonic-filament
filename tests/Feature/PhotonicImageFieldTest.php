@@ -8,8 +8,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
-    // Run migrations once
-    $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+    // Load and run migration from stub
+    $migration = include __DIR__.'/../../stubs/create_photonic_table.php.stub';
+    $migration->up();
 
     // Create uploads disk for testing
     Storage::fake('local');

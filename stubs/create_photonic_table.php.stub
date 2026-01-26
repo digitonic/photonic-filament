@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(get_photonic_table_name(), function (Blueprint $table) {
+        Schema::create('photonic', function (Blueprint $table) {
             $table->id();
             $table->string('asset_uuid', 36)->index();
             // Polymorphic relation to the owning model (nullable for standalone media records)
@@ -29,6 +29,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(get_photonic_table_name());
+        Schema::dropIfExists('photonic');
     }
 };

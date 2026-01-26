@@ -18,22 +18,33 @@ We intend this package to be used with the Photonic Server API.
 
 ```bash
 composer require digitonic/photonic-filament
+```
+
+### 1. Run the installer
+
+```bash
 php artisan photonic-filament:install
 ```
 
 The installer will prompt you for the required Photonic values and will update **both** your `.env` and `.env.example`.
 
-### Optional: publish assets
+### 2. Publish and run migrations
 
-If you want to customize the config / views, you can still publish them:
+```bash
+php artisan vendor:publish --tag=photonic-filament-migrations
+php artisan migrate
+```
+
+This creates the `photonic` table in your database to store image metadata.
+
+### Optional: Publish config and views
+
+If you want to customize the config or views:
 
 ```bash
 php artisan vendor:publish --tag=photonic-filament-config
-php artisan vendor:publish --tag=photonic-filament-migrations
 php artisan vendor:publish --tag=photonic-filament-views
 ```
-
-This creates `config/photonic-filament.php`, publishes the migration for the `photonic` table, and the Blade view component.
 
 ## Configuration
 
