@@ -3,6 +3,8 @@
 namespace Digitonic\Photonic\Filament;
 
 use Digitonic\Photonic\Filament\Console\InstallCommand;
+use Digitonic\Photonic\Filament\Livewire\PhotonicMediaManager;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -19,6 +21,9 @@ class PhotonicServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
+        // Register Livewire component
+        Livewire::component('photonic-media-manager', PhotonicMediaManager::class);
+
         // Ensure stable publish tags matching the README.
         $this->publishes([
             $this->package->basePath('/../config/photonic-filament.php') => config_path('photonic-filament.php'),

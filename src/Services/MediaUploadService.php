@@ -9,7 +9,9 @@ use Digitonic\Photonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use RuntimeException;
 
 class MediaUploadService
 {
@@ -142,11 +144,21 @@ class MediaUploadService
 
         // Livewire temporary upload
         if ($file instanceof TemporaryUploadedFile) {
-            $realPath = $file->getRealPath();
-            if (! $realPath || ! file_exists($realPath)) {
-                $stream = fopen($file->temporaryUrl(), 'r');
-            } else {
-                $stream = fopen($realPath, 'r');
+            $stream = null;
+
+            // Get the file
+            $realPath = Storage::exists($file->getClientOriginalPath());
+            if (! $realPath) {
+                try {
+                    $stream = Storage::readStream(Storage::temporaryUrl($file->getClientOriginalPath(), now()->addMinutes(5)), 'r');
+                } catch(RuntimeException $exception) {
+
+                }
+            }
+
+            if($stream === null) {
+                $stream = Storage::readStream($file->getClientOriginalPath());
+
             }
 
             return [$stream, $file->getClientOriginalName()];

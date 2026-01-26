@@ -6,10 +6,12 @@ use Digitonic\Photonic\Filament\Enums\PresetEnum;
 use Digitonic\Photonic\Filament\Http\Integrations\Photonic\API;
 use Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests\DeleteAsset;
 use Digitonic\Photonic\Filament\Models\Media;
+use Digitonic\Photonic\Filament\Services\MediaUploadService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Group;
@@ -18,8 +20,11 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\Livewire;
 
 class PhotonicImageField extends Group
 {
@@ -294,44 +299,52 @@ class PhotonicImageField extends Group
         // The actual media ID will be stored via a Hidden field
         $uploadFieldName = $mediaIdField.'_upload';
 
-        $this->inputComponent = PhotonicInput::make($mediaIdField)
+        // Create a separate upload field that doesn't get saved
+        $uploadField = PhotonicInput::make($uploadFieldName)
             ->label('Upload Media')
-            ->helperText('Select an image to upload to Photonic CDN')
+            ->helperText('Select an image to upload to Photonic CDN. Save the form to complete the upload.')
             ->returnId()
             ->multiple(false)
-            ->live()
-            ->formatStateUsing(function ($state, Set $set) use ($mediaModelClass, $mediaIdField, $strRandom) {
-                // We need to return back the FileName
-                $media = $mediaModelClass::find($state);
-                if ($media) {
-                    $set($mediaIdField, $media->id);
-                    $set('img_preview_id_mode_'.$strRandom, $media->id);
-
-                    return $media->id;
+            ->live(onBlur: true) // Try different live mode
+            ->afterStateUpdated(function ($state, Set $set) use ($mediaIdField, $uploadFieldName) {
+                if (is_numeric($state)) {
+                    $set($mediaIdField, (int) $state);
                 }
-
-                return null;
-            })
-            ->afterStateUpdated(function ($state, Set $set) use ($mediaIdField, $strRandom) {
-                // After upload, sync the preview field state
-                if ($state) {
-                    $set($mediaIdField, $state);
-                    $set('img_preview_id_mode_'.$strRandom, $state);
-                }
-            })
-            ->dehydrateStateUsing(function ($state) use ($extractMediaId) {
-                return $extractMediaId($state);
             })
             ->columnSpanFull();
+        
+        // The actual field that stores the media ID
+        $this->inputComponent = $uploadField;
 
         // Apply any callbacks that were queued before setUp
         foreach ($this->inputCallbacks as $callback) {
             $callback($this->inputComponent);
         }
 
-        $hasMedia = fn (Get $get): bool => !empty($get($mediaIdField));
+        $hasMedia = function (Get $get) use ($mediaIdField): bool {
+            $value = $get($mediaIdField);
+            // Only return true if we have an actual media ID (integer), not a TemporaryUploadedFile
+            return is_numeric($value) && !empty($value);
+        };
 
         return [
+            // Hidden field that stores the actual media ID
+            // During save, it reads from the upload field
+            Hidden::make($mediaIdField)
+                ->default(null)
+                ->dehydrateStateUsing(function ($state, Get $get) use ($uploadFieldName, $mediaIdField) {
+                    // Check if upload field has a value (media ID returned from saveUploadedFileUsing)
+                    $uploadValue = $get($uploadFieldName);
+                    
+                    // If upload field has a numeric value, use it
+                    if (is_numeric($uploadValue) && !empty($uploadValue)) {
+                        return (int) $uploadValue;
+                    }
+                    
+                    // Otherwise keep existing state
+                    return $state;
+                }),
+                
             Section::make('Photonic Media')
                 ->description('Manage your image upload and metadata')
                 ->collapsible()
@@ -344,46 +357,29 @@ class PhotonicImageField extends Group
                                 ->icon('heroicon-o-photo')
                                 ->schema([
                             // Uploader - visible when no media ID exists
+                            // Keep it in DOM even when hidden so it can be dehydrated
                             Group::make([
                                 $this->inputComponent,
                             ])
-                                ->visible(fn (Get $get): bool => !$hasMedia($get))
+                                ->hidden(fn (Get $get): bool => $hasMedia($get))
+                                ->live()
                                 ->columnSpanFull(),
 
                             // Preview - visible when media ID exists
                             Group::make([
-                                TextEntry::make('img_preview_id_mode_'.$strRandom)
-                                    ->label('Current Image')
-                                    ->live()
-                                    ->formatStateUsing(function (Get $get) use ($mediaIdField, $getMediaById) {
-                                        $media = $getMediaById($get($mediaIdField));
-
-                                        if (! $media) {
-                                            return 'No image available';
-                                        }
-
-                                        $filename = $media->filename ?? null;
-                                        if (! $filename) {
-                                            return 'No image available';
-                                        }
-
-                                        /** @var view-string $viewName */
-                                        $viewName = 'photonic-filament::components.image';
-
-                                        $html = view($viewName, [
-                                            'filename' => $filename,
-                                            'preset' => $this->previewPreset,
-                                            'class' => $this->previewClasses,
-                                            'alt' => $media->alt ?? $filename,
-                                            'media' => $media,
-                                        ])->render();
-
-                                        return new HtmlString($html);
-                                    })
-                                    ->extraAttributes(['class' => 'prose max-w-none'])
+                                ViewField::make('livewire_preview_'.$strRandom)
+                                    ->view('photonic-filament::livewire-wrapper')
+                                    ->viewData(fn (Get $get) => [
+                                        'mediaId' => $get($mediaIdField),
+                                        'preset' => $this->previewPreset,
+                                        'previewClasses' => $this->previewClasses,
+                                        'fieldName' => $mediaIdField,
+                                    ])
+                                    ->dehydrated(false)
                                     ->columnSpanFull(),
                             ])
                                 ->visible($hasMedia)
+                                ->live()
                                 ->columnSpanFull(),
                         ]),
 
@@ -470,7 +466,7 @@ class PhotonicImageField extends Group
                                 ->schema([
                                     Group::make([
                                         Actions::make([
-                                            Action::make('removePhotonicImage')
+                                            Action::make('removePhotonicImage_'.$strRandom) // Make action name unique per field
                                                 ->label('Delete Image')
                                                 ->color('danger')
                                                 ->icon('heroicon-o-trash')
@@ -478,24 +474,108 @@ class PhotonicImageField extends Group
                                                 ->modalHeading('Delete Image')
                                                 ->modalDescription('Are you sure you want to delete this image? This action cannot be undone and will remove the image from the CDN.')
                                                 ->modalSubmitActionLabel('Yes, delete it')
-                                                ->action(function (Get $get, $set, $livewire) use ($mediaIdField, $mediaModelClass, $extractMediaId) {
+                                                ->action(function (Get $get, Set $set, $livewire) use ($mediaIdField, $mediaModelClass, $extractMediaId, $uploadFieldName) {
                                                     $mediaId = $extractMediaId($get($mediaIdField));
-                                                    if ($mediaId) {
-                                                        $media = $mediaModelClass::find($mediaId);
-
-                                                        if ($media) {
-                                                            // Send the API call to remove the asset
+                                                    
+                                                    if (!$mediaId) {
+                                                        Log::warning('PhotonicImageField: No media ID to delete', [
+                                                            'field' => $mediaIdField,
+                                                        ]);
+                                                        return;
+                                                    }
+                                                    
+                                                    $media = $mediaModelClass::find($mediaId);
+                                                    $apiDeleteSuccess = false;
+                                                    
+                                                    // Try to delete from CDN if media exists
+                                                    if ($media) {
+                                                        try {
                                                             $api = new API;
                                                             $request = new DeleteAsset($media->asset_uuid);
                                                             $response = $api->send($request);
 
                                                             if ($response->status() === 200) {
                                                                 $media->delete();
-                                                                $set($mediaIdField, null);
-                                                                $livewire->dispatch('$refresh');
                                                             }
+                                                        } catch (\Exception $e) {
+
                                                         }
+                                                    } else {
+                                                        Log::warning('PhotonicImageField: Media not found in database, will still clear field', [
+                                                            'media_id' => $mediaId,
+                                                            'field' => $mediaIdField,
+                                                        ]);
                                                     }
+                                                    
+                                                    // ALWAYS clear the field, even if media doesn't exist or API call failed
+                                                    // This fixes orphaned references
+                                                    $record = null;
+                                                    
+                                                    // Try to get the record from Livewire component
+                                                    if (method_exists($livewire, 'getRecord')) {
+                                                        $record = $livewire->getRecord();
+                                                    } elseif (property_exists($livewire, 'record')) {
+                                                        $record = $livewire->record;
+                                                    } elseif (property_exists($livewire, 'ownerRecord')) {
+                                                        $record = $livewire->ownerRecord;
+                                                    }
+                                                    
+                                                    if ($record && method_exists($record, 'update')) {
+                                                        // Check if this is a JSON field (contains dots like content.0.data.hero_image)
+                                                        if (str_contains($mediaIdField, '.')) {
+                                                            // This is a JSON path - we need to update nested JSON
+                                                            $parts = explode('.', $mediaIdField);
+                                                            $rootField = array_shift($parts); // e.g., "content"
+                                                            
+                                                            // Get the current JSON data
+                                                            $jsonData = $record->{$rootField};
+                                                            
+                                                            if (is_string($jsonData)) {
+                                                                $jsonData = json_decode($jsonData, true);
+                                                            }
+                                                            
+                                                            // Navigate to the nested value and set it to null
+                                                            $current = &$jsonData;
+                                                            foreach ($parts as $index => $part) {
+                                                                if ($index === count($parts) - 1) {
+                                                                    // Last part - set to null
+                                                                    $current[$part] = null;
+                                                                } else {
+                                                                    // Navigate deeper
+                                                                    if (!isset($current[$part])) {
+                                                                        Log::warning('PhotonicImageField: Path does not exist', [
+                                                                            'part' => $part,
+                                                                            'available_keys' => is_array($current) ? array_keys($current) : 'not an array',
+                                                                        ]);
+                                                                        break;
+                                                                    }
+                                                                    $current = &$current[$part];
+                                                                }
+                                                            }
+                                                            
+                                                            // Save the updated JSON back to the record
+                                                            $record->update([
+                                                                $rootField => $jsonData,
+                                                            ]);
+                                                        } else {
+                                                            // Simple field - direct update
+                                                            $record->update([
+                                                                $mediaIdField => null,
+                                                            ]);
+                                                        }
+                                                    } else {
+                                                        Log::warning('PhotonicImageField: Could not find record to update database', [
+                                                            'field' => $mediaIdField,
+                                                            'livewire_class' => get_class($livewire),
+                                                            'has_record_method' => method_exists($livewire, 'getRecord'),
+                                                            'has_record_property' => property_exists($livewire, 'record'),
+                                                            'has_owner_property' => property_exists($livewire, 'ownerRecord'),
+                                                        ]);
+                                                    }
+                                                    
+                                                    // Clear the field state - this will trigger visibility changes automatically
+                                                    $set($mediaIdField, null);
+                                                    $set($uploadFieldName, null);
                                                 }),
                                         ])->columnSpanFull(),
                                     ])->columnSpanFull(),
