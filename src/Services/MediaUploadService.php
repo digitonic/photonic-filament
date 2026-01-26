@@ -151,12 +151,12 @@ class MediaUploadService
             if (! $realPath) {
                 try {
                     $stream = Storage::readStream(Storage::temporaryUrl($file->getClientOriginalPath(), now()->addMinutes(5)), 'r');
-                } catch(RuntimeException $exception) {
+                } catch (RuntimeException $exception) {
 
                 }
             }
 
-            if($stream === null) {
+            if ($stream === null) {
                 $stream = Storage::readStream($file->getClientOriginalPath());
 
             }

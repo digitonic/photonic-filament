@@ -3,8 +3,6 @@
 namespace Digitonic\Photonic\Filament\Livewire;
 
 use Digitonic\Photonic\Filament\Enums\PresetEnum;
-use Digitonic\Photonic\Filament\Http\Integrations\Photonic\API;
-use Digitonic\Photonic\Filament\Http\Integrations\Photonic\Requests\DeleteAsset;
 use Digitonic\Photonic\Filament\Models\Media;
 use Livewire\Component;
 
@@ -31,7 +29,7 @@ class PhotonicMediaManager extends Component
         } else {
             $this->mediaId = null;
         }
-        
+
         $this->preset = $preset ?? PresetEnum::ORIGINAL->value;
         $this->previewClasses = $previewClasses ?? 'rounded-xl max-w-full';
         $this->fieldName = $fieldName;
@@ -56,13 +54,13 @@ class PhotonicMediaManager extends Component
             // If it's a file upload, ignore it - we're waiting for the actual media ID
             return;
         }
-        
+
         if (is_numeric($value)) {
             $this->mediaId = (int) $value;
         } else {
             $this->mediaId = null;
         }
-        
+
         $this->loadMedia();
     }
 
