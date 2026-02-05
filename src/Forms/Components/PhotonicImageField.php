@@ -265,7 +265,7 @@ class PhotonicImageField extends Group
                             'slot' => 'You must save the page before uploading an image.',
                         ])
                         ->columnSpanFull(),
-                ])
+                ]),
         ];
     }
 
