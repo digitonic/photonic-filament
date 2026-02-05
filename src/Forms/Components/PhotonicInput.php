@@ -14,20 +14,42 @@ class PhotonicInput extends FileUpload
      */
     protected bool $returnMediaId = false;
 
+    /**
+     * Track processed files to prevent duplicate uploads during multiple dehydration cycles.
+     * Maps file identifier => result (media ID or filename)
+     *
+     * @var array<string, string|int>
+     */
+    protected array $processedFiles = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
         // Configure as image upload with private visibility
         $this->image();
-        $this->multiple();
         $this->visibility('private');
         $this->downloadable(false);
         $this->openable(false);
-        $this->live();
 
         // Process files when form is saved
-        $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file): string|int {
+        $this->saveUploadedFileUsing(function (TemporaryUploadedFile $file, $livewire, $get): string|int {
+            // Generate unique identifier for this file to prevent duplicate processing
+            // Use filename + path as identifier (survives across dehydration cycles)
+            $fileIdentifier = $file->getFilename().'|'.$file->path();
+
+            // Check if we've already processed this file
+            if (array_key_exists($fileIdentifier, $this->processedFiles)) {
+                dump('returning same file found', $fileIdentifier, $this->processedFiles);
+
+                // Return the cached result from the first processing
+                return $this->processedFiles[$fileIdentifier];
+            }
+
+            // Cache the result to prevent reprocessing on subsequent dehydration cycles
+            // This will return failed if the process fails after this, but wont process any additional calls.
+            $this->processedFiles[$fileIdentifier] = 'failed';
+
             $endpoint = config('photonic-filament.endpoint');
 
             if (blank($endpoint)) {
@@ -40,8 +62,16 @@ class PhotonicInput extends FileUpload
             if ($this->returnMediaId === false) {
                 $modelClass = $this->getModel();
                 $modelId = $this->resolveCurrentRecordId();
-                $modelInstance = $modelClass::find($modelId);
+                if ($modelId) {
+                    $modelInstance = $modelClass::find($modelId);
+                }
             }
+
+            // Try to get pending metadata from form state
+            $alt = $get('_pending_media_alt') ?? '';
+            $title = $get('_pending_media_title') ?? '';
+            $description = $get('_pending_media_description') ?? '';
+            $caption = $get('_pending_media_caption') ?? '';
 
             $service = new MediaUploadService;
 
@@ -49,18 +79,25 @@ class PhotonicInput extends FileUpload
             // This allows the same model to have both ID-based and relationship-based media
             $media = $service->upload($file, [
                 'model' => $this->returnMediaId ? null : $modelInstance,
-                'alt' => '',
-                'title' => '',
-                'description' => '',
-                'caption' => '',
+                'alt' => $alt,
+                'title' => $title,
+                'description' => $description,
+                'caption' => $caption,
             ]);
 
-            // Return media ID or filename based on configuration
-            if ($this->returnMediaId && $media->id !== null) {
-                return (string) $media->id;
+            if (! $modelInstance && ! $this->returnMediaId) {
+                $livewire->dispatch('pending-media-created', mediaId: $media->id);
             }
 
-            return $media->filename;
+            // Return media ID or filename based on configuration
+            $result = $this->returnMediaId && $media->id !== null
+                ? (string) $media->id
+                : $media->asset_uuid;
+
+            // Cache the result to prevent reprocessing on subsequent dehydration cycles
+            $this->processedFiles[$fileIdentifier] = $result;
+
+            return $result;
         });
     }
 
@@ -87,30 +124,6 @@ class PhotonicInput extends FileUpload
             $record = $livewire->getRecord();
             if ($record && method_exists($record, 'getKey')) {
                 return (int) $record->getKey();
-            }
-        }
-
-        // Try common public properties
-        foreach (['record', 'ownerRecord'] as $prop) {
-            if (property_exists($livewire, $prop)) {
-                $record = $livewire->{$prop};
-                if ($record && method_exists($record, 'getKey')) {
-                    return (int) $record->getKey();
-                }
-            }
-        }
-
-        // Try form state
-        if (! empty($livewire->form) && method_exists($livewire->form, 'getState')) {
-            try {
-                $state = $livewire->form->getState();
-                foreach (['id', $this->getStatePath().'.id'] as $key) {
-                    if (is_array($state) && array_key_exists($key, $state) && $state[$key]) {
-                        return (int) $state[$key];
-                    }
-                }
-            } catch (\Throwable) {
-                // Silently fail if state cannot be retrieved
             }
         }
 
