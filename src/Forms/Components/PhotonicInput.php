@@ -40,8 +40,6 @@ class PhotonicInput extends FileUpload
 
             // Check if we've already processed this file
             if (array_key_exists($fileIdentifier, $this->processedFiles)) {
-                dump('returning same file found', $fileIdentifier, $this->processedFiles);
-
                 // Return the cached result from the first processing
                 return $this->processedFiles[$fileIdentifier];
             }
