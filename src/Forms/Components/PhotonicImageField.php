@@ -106,7 +106,8 @@ class PhotonicImageField extends Group
 
         return [
             Section::make('Photonic Media')
-                ->description('Manage your image upload and metadata')
+                // Check if the page we're on is a create page
+                ->hidden(fn (string $operation): bool => $operation === 'create')->description('Manage your image upload and metadata')
                 ->collapsible()
                 ->collapsed()
                 ->schema([
@@ -251,6 +252,19 @@ class PhotonicImageField extends Group
                         ->contained(false),
                 ])
                 ->columnSpanFull(),
+
+            // Warning message around the page needing to be saved
+            Section::make('Photonic Media')
+                ->description('Manage your image upload and metadata')
+                ->hidden(fn (string $operation): bool => $operation !== 'create')->collapsible()
+                ->collapsed()
+                ->schema([
+                    ViewField::make('info')
+                        ->view('photonic-filament::components.warning', [
+                            'slot' => 'You must save the page before uploading an image.',
+                        ])
+                        ->columnSpanFull(),
+                ]),
         ];
     }
 

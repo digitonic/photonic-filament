@@ -9,9 +9,7 @@ use Digitonic\Photonic\Filament\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use RuntimeException;
 
 class MediaUploadService
 {
@@ -24,8 +22,7 @@ class MediaUploadService
      */
     public function upload($file, array $options = []): Media
     {
-        $endpoint = config('photonic-filament.endpoint');
-        if (blank($endpoint)) {
+        if (blank(config('photonic-filament.endpoint'))) {
             throw new \RuntimeException('Photonic endpoint is not configured. Set photonic-filament.endpoint.');
         }
 
@@ -35,6 +32,11 @@ class MediaUploadService
         }
 
         [$fileStream, $originalName] = $this->resolveFileStreamAndName($file);
+
+        if ($fileStream === null) {
+            throw new \RuntimeException('Filestream is null');
+        }
+
         $fileConfig = $this->buildFileConfig($file, $fileStream);
         $contentType = $fileConfig['mime_type'] ?? 'application/octet-stream';
 
@@ -55,6 +57,8 @@ class MediaUploadService
 
         $signedUrl = $signedUrlData['url'];
         $s3Key = $signedUrlData['key'];
+
+        unset($signedUrlData, $signedUrlResponse);
 
         // Step 2: Upload the file to S3 using the signed URL
         // Read the file content from the stream
@@ -77,6 +81,8 @@ class MediaUploadService
             ->withBody($fileContent, $contentType)
             ->put($signedUrl);
 
+        unset($fileContent, $signedUrl, $contentType);
+
         if (! $uploadResponse->successful()) {
             throw new \RuntimeException('Failed to upload file to S3. Status: '.$uploadResponse->status());
         }
@@ -94,6 +100,8 @@ class MediaUploadService
 
         $response = $api->send($createAssetRequest);
         $json = $response->json()['data'] ?? [];
+
+        unset($response, $createAssetRequest);
 
         $responseKey = config('photonic-filament.response_key', 'original_filename');
         $filename = $json[$responseKey] ?? $json['filename'] ?? $originalName;
@@ -117,6 +125,8 @@ class MediaUploadService
         /** @var Media $media */
         $media = $mediaModelClass::create($attributes);
 
+        unset($attributes);
+
         return $media;
     }
 
@@ -132,10 +142,9 @@ class MediaUploadService
     }
 
     /**
-     * @param  UploadedFile|TemporaryUploadedFile|string|resource  $file
      * @return array{0: resource,1: string}
      */
-    protected function resolveFileStreamAndName($file): array
+    protected function resolveFileStreamAndName(TemporaryUploadedFile|string|UploadedFile $file): array
     {
         // Already a resource
         if (is_resource($file)) {
@@ -144,24 +153,7 @@ class MediaUploadService
 
         // Livewire temporary upload
         if ($file instanceof TemporaryUploadedFile) {
-            $stream = null;
-
-            // Get the file
-            $realPath = Storage::exists($file->getClientOriginalPath());
-            if (! $realPath) {
-                try {
-                    $stream = Storage::readStream(Storage::temporaryUrl($file->getClientOriginalPath(), now()->addMinutes(5)), 'r');
-                } catch (RuntimeException $exception) {
-
-                }
-            }
-
-            if ($stream === null) {
-                $stream = Storage::readStream($file->getClientOriginalPath());
-
-            }
-
-            return [$stream, $file->getClientOriginalName()];
+            return [$file->readStream(), $file->getClientOriginalName()];
         }
 
         // Standard UploadedFile
@@ -218,7 +210,7 @@ class MediaUploadService
 
         if ($file instanceof TemporaryUploadedFile) {
             $mime = $file->getMimeType();
-            $size = $file->getSize();
+            $size = 0; // Troubles getting this atm...
             $extension = $file->getClientOriginalExtension();
             $hashName = $file->hashName();
         } elseif ($file instanceof UploadedFile) {
