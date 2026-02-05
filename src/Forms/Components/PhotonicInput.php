@@ -67,22 +67,16 @@ class PhotonicInput extends FileUpload
                 }
             }
 
-            // Try to get pending metadata from form state
-            $alt = $get('_pending_media_alt') ?? '';
-            $title = $get('_pending_media_title') ?? '';
-            $description = $get('_pending_media_description') ?? '';
-            $caption = $get('_pending_media_caption') ?? '';
-
             $service = new MediaUploadService;
 
             // When returning media ID (ID mode), don't associate with model via morph columns
             // This allows the same model to have both ID-based and relationship-based media
             $media = $service->upload($file, [
                 'model' => $this->returnMediaId ? null : $modelInstance,
-                'alt' => $alt,
-                'title' => $title,
-                'description' => $description,
-                'caption' => $caption,
+                'alt' => '',
+                'title' => '',
+                'description' => '',
+                'caption' => '',
             ]);
 
             if (! $modelInstance && ! $this->returnMediaId) {
