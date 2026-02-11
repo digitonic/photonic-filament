@@ -1,6 +1,7 @@
 <?php
 
 use Digitonic\Photonic\Filament\Enums\PresetEnum;
+use Digitonic\Photonic\Filament\Facades\Photonic;
 use Digitonic\Photonic\Filament\Models\Media;
 
 if (! function_exists('photonic_asset')) {
@@ -55,21 +56,11 @@ if (! function_exists('photonic_asset_by_id')) {
     {
         $cacheKey = "photonic_asset_{$mediaId}_{$preset}";
 
-        return cache()->remember($cacheKey, $cacheTtl, function () use ($mediaId, $preset) {
-            /** @var class-string<Media> $mediaModelClass */
-            $mediaModelClass = config('photonic-filament.media_model', Media::class);
-            $media = $mediaModelClass::find($mediaId);
-
-            if (! $media) {
-                return null;
-            }
-
-            return photonic_asset(
-                filename: $media->filename,
-                assetUuid: $media->asset_uuid,
-                preset: $preset
-            );
-        });
+        return cache()->remember($cacheKey, $cacheTtl, fn () => Photonic::make()
+            ->for($mediaId)
+            ->preset($preset)
+            ->cacheTtl($cacheTtl)
+            ->url());
     }
 }
 
@@ -83,14 +74,10 @@ if (! function_exists('photonic_media_by_id')) {
      */
     function photonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?Media
     {
-        $cacheKey = "photonic_media_{$mediaId}";
-
-        return cache()->remember($cacheKey, $cacheTtl, function () use ($mediaId) {
-            /** @var class-string<Media> $mediaModelClass */
-            $mediaModelClass = config('photonic-filament.media_model', Media::class);
-
-            return $mediaModelClass::find($mediaId);
-        });
+        return Photonic::make()
+            ->for($mediaId)
+            ->cacheTtl($cacheTtl)
+            ->media();
     }
 }
 

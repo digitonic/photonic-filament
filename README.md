@@ -93,7 +93,49 @@ PhotonicImageField::make();
 />
 ```
 
-## Helper functions
+## Fluent API
+
+The primary API is a facade-first fluent resolver:
+
+```php
+use Digitonic\Photonic\Filament\Facades\Photonic;
+use Digitonic\Photonic\Filament\Enums\PresetEnum;
+
+$url = Photonic::make()
+    ->for($mediaIdOrMediaModel)
+    ->preset(PresetEnum::ORIGINAL)
+    ->url(); // ?string
+
+$media = Photonic::make()
+    ->for($mediaIdOrMediaModel)
+    ->media(); // ?Media
+
+$info = Photonic::make()
+    ->for($mediaIdOrMediaModel)
+    ->preset('featured')
+    ->info(); // ?PhotonicInfo
+```
+
+`PhotonicInfo` is immutable and provides:
+
+- `id`
+- `assetUuid`
+- `filename`
+- `preset`
+- `url`
+- `alt`
+- `title`
+- `description`
+- `caption`
+- `config`
+- `createdAt`
+- `updatedAt`
+
+It supports `toArray()` and `jsonSerialize()`.
+
+When media cannot be resolved, `url()`, `media()`, and `info()` all return `null`.
+
+## Helper functions (Compatibility)
 
 - `photonic_asset(string $filename, string $assetUuid, string $preset = 'original'): ?string;`
 - `photonic_asset_by_id(int $mediaId, string $preset = 'original', int $cacheTtl = 3600): ?string;`
