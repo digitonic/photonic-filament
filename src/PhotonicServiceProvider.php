@@ -19,8 +19,17 @@ class PhotonicServiceProvider extends PackageServiceProvider
 
     public function bootingPackage(): void
     {
-        // Register Livewire component
-        Livewire::component('photonic-media-manager', PhotonicMediaManager::class);
+        $registerLivewireComponent = static function (): void {
+            Livewire::component('photonic-media-manager', PhotonicMediaManager::class);
+        };
+
+        // Livewire 4 / Filament 5 can be registered after this provider in Testbench.
+        // Register immediately when available, otherwise defer until Livewire resolves.
+        if ($this->app->bound('livewire.finder')) {
+            $registerLivewireComponent();
+        } else {
+            $this->callAfterResolving('livewire', $registerLivewireComponent);
+        }
 
         // Publish config
         $this->publishes([
