@@ -8,8 +8,7 @@
     if($media === null) {
         return;
     }
-    $src = \Digitonic\Photonic\Filament\Facades\Photonic::make()
-        ->for($media)
+    $src = \Digitonic\Photonic\Filament\Facades\Photonic::for($media)
         ->preset($preset)
         ->url();
     // Prioritize media.alt over passed alt over filename

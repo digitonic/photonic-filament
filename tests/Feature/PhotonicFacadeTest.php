@@ -14,7 +14,7 @@ it('binds photonic manager into the container', function () {
     expect(app('photonic'))->toBeInstanceOf(PhotonicManager::class);
 });
 
-it('resolves make through facade and returns expected url media and info', function () {
+it('resolves for through facade and returns expected url media and info', function () {
     config()->set('photonic-filament.cdn_endpoint', 'https://cdn.example.com');
     config()->set('photonic-filament.site_uuid', 'site-123');
 
@@ -24,8 +24,7 @@ it('resolves make through facade and returns expected url media and info', funct
         'alt' => 'Facade alt',
     ]);
 
-    $resolver = Photonic::make()
-        ->for($media->id)
+    $resolver = Photonic::for($media->id)
         ->preset('original');
 
     $url = $resolver->url();

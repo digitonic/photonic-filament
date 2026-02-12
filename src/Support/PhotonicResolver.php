@@ -14,11 +14,6 @@ class PhotonicResolver
 
     private int $cacheTtl = 3600;
 
-    public static function make(): self
-    {
-        return new self;
-    }
-
     public function for(Media|int $media): self
     {
         $this->target = $media;

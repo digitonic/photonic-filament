@@ -10,8 +10,7 @@
             return;
         }
 
-        $cdnUrl = \Digitonic\Photonic\Filament\Facades\Photonic::make()
-            ->for($relatedModel)
+        $cdnUrl = \Digitonic\Photonic\Filament\Facades\Photonic::for($relatedModel)
             ->url();
     @endphp
 

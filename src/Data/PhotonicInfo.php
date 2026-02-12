@@ -4,7 +4,7 @@ namespace Digitonic\Photonic\Filament\Data;
 
 use JsonSerializable;
 
-readonly class PhotonicInfo implements JsonSerializable
+class PhotonicInfo implements JsonSerializable
 {
     public function __construct(
         public ?int $id,

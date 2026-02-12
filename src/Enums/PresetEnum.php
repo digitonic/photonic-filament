@@ -7,9 +7,13 @@ use Filament\Support\Contracts\HasLabel;
 enum PresetEnum: string implements HasLabel
 {
     case ORIGINAL = 'original';
+    case AUTO = 'auto';
 
     public function getLabel(): string
     {
-        return 'Original';
+        return match ($this) {
+            self::ORIGINAL => 'Original',
+            self::AUTO => 'Auto',
+        };
     }
 }

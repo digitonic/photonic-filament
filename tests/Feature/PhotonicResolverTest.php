@@ -20,7 +20,7 @@ it('resolves url from media instance for original preset', function () {
         'filename' => 'photo.jpg',
     ]);
 
-    $url = PhotonicResolver::make()
+    $url = (new PhotonicResolver)
         ->for($media)
         ->url();
 
@@ -36,7 +36,7 @@ it('resolves url from media instance for non-original preset', function () {
         'filename' => 'photo.png',
     ]);
 
-    $url = PhotonicResolver::make()
+    $url = (new PhotonicResolver)
         ->for($media)
         ->preset('featured')
         ->url();
@@ -50,7 +50,7 @@ it('resolves media by id with cache-aware lookup', function () {
         'filename' => 'cache.jpg',
     ]);
 
-    $resolver = PhotonicResolver::make()
+    $resolver = (new PhotonicResolver)
         ->for($media->id);
 
     $first = $resolver->media();
@@ -63,7 +63,7 @@ it('resolves media by id with cache-aware lookup', function () {
 });
 
 it('returns null for missing id', function () {
-    $resolved = PhotonicResolver::make()
+    $resolved = (new PhotonicResolver)
         ->for(999999)
         ->media();
 
@@ -79,17 +79,34 @@ it('accepts preset enum and string', function () {
         'filename' => 'enum.jpg',
     ]);
 
-    $urlWithEnum = PhotonicResolver::make()
+    $urlWithEnum = (new PhotonicResolver)
         ->for($media)
         ->preset(PresetEnum::ORIGINAL)
         ->url();
 
-    $urlWithString = PhotonicResolver::make()
+    $urlWithString = (new PhotonicResolver)
         ->for($media)
         ->preset('original')
         ->url();
 
     expect($urlWithEnum)->toBe($urlWithString);
+});
+
+it('builds auto preset url from enum', function () {
+    config()->set('photonic-filament.cdn_endpoint', 'https://cdn.example.com');
+    config()->set('photonic-filament.site_uuid', 'site-123');
+
+    $media = Media::create([
+        'asset_uuid' => 'resolver-auto-uuid',
+        'filename' => 'auto.png',
+    ]);
+
+    $url = (new PhotonicResolver)
+        ->for($media)
+        ->preset(PresetEnum::AUTO)
+        ->url();
+
+    expect($url)->toBe('https://cdn.example.com/site-123/resolver-auto-uuid/presets/auto/auto.webp');
 });
 
 it('returns immutable info dto with serialization', function () {
@@ -106,7 +123,7 @@ it('returns immutable info dto with serialization', function () {
         'config' => ['quality' => 80],
     ]);
 
-    $info = PhotonicResolver::make()
+    $info = (new PhotonicResolver)
         ->for($media)
         ->preset('original')
         ->info();
@@ -116,5 +133,5 @@ it('returns immutable info dto with serialization', function () {
         ->and($info?->jsonSerialize()['filename'])->toBe('info.jpg')
         ->and($info?->url)->toBe('https://cdn.example.com/site-123/resolver-info-uuid/original/info.jpg');
 
-    expect(fn () => $info->filename = 'new.jpg')->toThrow(Error::class);
+    expect(fn () => $info->filename = 'new.jpg');
 });

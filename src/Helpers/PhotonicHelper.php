@@ -56,8 +56,7 @@ if (! function_exists('photonic_asset_by_id')) {
     {
         $cacheKey = "photonic_asset_{$mediaId}_{$preset}";
 
-        return cache()->remember($cacheKey, $cacheTtl, fn () => Photonic::make()
-            ->for($mediaId)
+        return cache()->remember($cacheKey, $cacheTtl, fn () => Photonic::for($mediaId)
             ->preset($preset)
             ->cacheTtl($cacheTtl)
             ->url());
@@ -74,8 +73,7 @@ if (! function_exists('photonic_media_by_id')) {
      */
     function photonic_media_by_id(int $mediaId, int $cacheTtl = 3600): ?Media
     {
-        return Photonic::make()
-            ->for($mediaId)
+        return Photonic::for($mediaId)
             ->cacheTtl($cacheTtl)
             ->media();
     }
@@ -95,7 +93,7 @@ if (! function_exists('forget_photonic_cache')) {
 
         // Clear all preset URL caches for this media
         // Note: We can't know all presets used, so we clear common ones
-        $commonPresets = ['original', 'thumbnail', 'featured', 'banner', 'small', 'medium', 'large'];
+        $commonPresets = ['original', 'auto', 'thumbnail', 'featured', 'banner', 'small', 'medium', 'large'];
         foreach ($commonPresets as $preset) {
             cache()->forget("photonic_asset_{$mediaId}_{$preset}");
         }

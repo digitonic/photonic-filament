@@ -101,20 +101,19 @@ The primary API is a facade-first fluent resolver:
 use Digitonic\Photonic\Filament\Facades\Photonic;
 use Digitonic\Photonic\Filament\Enums\PresetEnum;
 
-$url = Photonic::make()
-    ->for($mediaIdOrMediaModel)
+$url = Photonic::for($mediaIdOrMediaModel)
     ->preset(PresetEnum::ORIGINAL)
     ->url(); // ?string
 
-$media = Photonic::make()
-    ->for($mediaIdOrMediaModel)
+$media = Photonic::for($mediaIdOrMediaModel)
     ->media(); // ?Media
 
-$info = Photonic::make()
-    ->for($mediaIdOrMediaModel)
+$info = Photonic::for($mediaIdOrMediaModel)
     ->preset('featured')
     ->info(); // ?PhotonicInfo
 ```
+
+`PresetEnum::AUTO` is available when you want the API-generated auto WebP preset.
 
 `PhotonicInfo` is immutable and provides:
 
