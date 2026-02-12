@@ -8,11 +8,9 @@
     if($media === null) {
         return;
     }
-    $src = photonic_asset(
-            filename:  $media->filename,
-            assetUuid: $media->asset_uuid,
-            preset: $preset
-        );
+    $src = \Digitonic\Photonic\Filament\Facades\Photonic::for($media)
+        ->preset($preset)
+        ->url();
     // Prioritize media.alt over passed alt over filename
     $altText = $media->alt ?? $media->filename;
 @endphp

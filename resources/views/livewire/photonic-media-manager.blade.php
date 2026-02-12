@@ -4,7 +4,7 @@
             {{-- Image Preview --}}
             <div class="prose max-w-none">
                 <img 
-                    src="{{ photonic_asset($media->filename, $media->asset_uuid, $preset) }}" 
+                    src="{{ \Digitonic\Photonic\Filament\Facades\Photonic::for($media)->preset($preset)->url() }}" 
                     alt="{{ $media->alt ?? $media->filename }}"
                     class="{{ $previewClasses }}"
                 />
