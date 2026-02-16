@@ -43,7 +43,10 @@
     "laravel": {
       "providers": [
         "Digitonic\\Photonic\\Filament\\PhotonicServiceProvider"
-      ]
+      ],
+      "aliases": {
+        "Photonic": "Digitonic\\Photonic\\Filament\\Facades\\Photonic"
+      }
     }
   },
   "scripts": {

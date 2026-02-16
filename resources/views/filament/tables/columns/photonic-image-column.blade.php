@@ -10,7 +10,8 @@
             return;
         }
 
-        $cdnUrl = photonic_asset($relatedModel->filename, $relatedModel->asset_uuid);
+        $cdnUrl = \Digitonic\Photonic\Filament\Facades\Photonic::for($relatedModel)
+            ->url();
     @endphp
 
     <img src="{{ $cdnUrl }}" alt="{{ $relatedModel->alt ?? 'Image' }}" class="max-w-full h-auto rounded">
